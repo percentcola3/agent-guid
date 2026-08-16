@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 530" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="530" fill="#ffffff"/>
+
+  <!-- ① 输入文本 -->
+  <rect x="300" y="16" width="280" height="40" rx="20" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.5"/>
+  <text x="440" y="41" text-anchor="middle" font-size="15" fill="#1a4f8f">① 输入文本</text>
+  <line x1="440" y1="56" x2="440" y2="82" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ② 切分 token -->
+  <rect x="300" y="86" width="280" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="440" y="111" text-anchor="middle" font-size="14" fill="#24292f">② 切分为 token 序列</text>
+  <line x1="440" y1="126" x2="440" y2="152" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ③ 向量化 -->
+  <rect x="240" y="156" width="400" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="440" y="181" text-anchor="middle" font-size="14" fill="#24292f">③ 每个 token 查表变成向量,并写入位置信息</text>
+  <line x1="440" y1="196" x2="440" y2="222" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ④ Transformer 堆叠 -->
+  <rect x="150" y="226" width="580" height="134" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="440" y="250" text-anchor="middle" font-size="14.5" font-weight="600" fill="#24292f">④ 经过 N 层 Transformer 块,逐层更新 token 表示</text>
+
+  <rect x="175" y="262" width="255" height="32" rx="6" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1"/>
+  <text x="302" y="283" text-anchor="middle" font-size="13" fill="#1a4f8f">Attention:token 之间交换信息</text>
+  <rect x="450" y="262" width="255" height="32" rx="6" fill="#fff8e6" stroke="#d4a72c" stroke-width="1"/>
+  <text x="577" y="283" text-anchor="middle" font-size="13" fill="#7d4e00">FFN:每个 token 独自加工</text>
+  <text x="440" y="316" text-anchor="middle" font-size="12.5" fill="#57606a">一层 = Attention + FFN;上图为其中一层,整模型共 N 层</text>
+  <text x="440" y="342" text-anchor="middle" font-size="12.5" fill="#bf3989">decoder-only 模型使用因果掩码:生成当前位置时不能读取后续 token</text>
+
+  <line x1="440" y1="360" x2="440" y2="386" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ⑤ 概率分布 -->
+  <rect x="215" y="390" width="450" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="440" y="415" text-anchor="middle" font-size="14" fill="#24292f">⑤ 给每个候选 token 打分,再换算成总和为 1 的概率</text>
+  <line x1="440" y1="430" x2="440" y2="456" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ⑥ 取下一个 token -->
+  <rect x="170" y="460" width="540" height="44" rx="10" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.5"/>
+  <text x="440" y="487" text-anchor="middle" font-size="14" fill="#116329">⑥ 按解码规则选择下一个 token,拼回序列后继续预测</text>
+</svg>

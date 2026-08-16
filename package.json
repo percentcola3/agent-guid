@@ -1,0 +1,21 @@
+{
+  "name": "code-agent-guide",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agent 小册：写给前端的 Agent 入门指引",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "docs:dev": "vitepress dev",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.130",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3",
+    "vitepress": "^1.5.0"
+  }
+}

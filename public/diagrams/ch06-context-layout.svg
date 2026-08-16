@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 470" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <rect x="0" y="0" width="880" height="470" fill="#ffffff"/>
+
+  <!-- 标题:模型输入 -->
+  <text x="330" y="40" text-anchor="middle" font-size="14.5" font-weight="600" fill="#24292f">一次请求的模型输入(从上到下)</text>
+
+  <!-- 第一段:稳定前缀 -->
+  <rect x="60" y="60" width="540" height="74" rx="8" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.5"/>
+  <text x="80" y="86" font-size="14" font-weight="600" fill="#116329">第一段:稳定前缀(尽量少改)</text>
+  <text x="80" y="112" font-size="12.5" fill="#116329">[系统提示词] [AGENTS.md] [工具定义]</text>
+
+  <!-- 第二段:对话历史 -->
+  <rect x="60" y="142" width="540" height="74" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="80" y="168" font-size="14" font-weight="600" fill="#24292f">第二段:模型可见历史(通常追加)</text>
+  <text x="80" y="194" font-size="12.5" fill="#57606a">[用户消息] [助手回复] [工具调用与结果] ……</text>
+
+  <!-- 第三段:动态尾巴 -->
+  <rect x="60" y="224" width="540" height="74" rx="8" fill="#fff8e6" stroke="#d4a72c" stroke-width="1.5"/>
+  <text x="80" y="250" font-size="14" font-weight="600" fill="#7d4e00">第三段:动态状态快照(每轮重建)</text>
+  <text x="80" y="276" font-size="12.5" fill="#7d4e00">[环境状态栏:cwd / git 分支 / 未提交变更 / 时间 / 预算]</text>
+
+  <!-- 右侧:缓存命中范围 -->
+  <rect x="630" y="60" width="230" height="156" rx="10" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.5"/>
+  <text x="745" y="88" text-anchor="middle" font-size="13.5" font-weight="600" fill="#1a4f8f">服务端前缀缓存机会</text>
+  <text x="745" y="116" text-anchor="middle" font-size="12.5" fill="#1a4f8f">第一段:最容易复用</text>
+  <text x="745" y="142" text-anchor="middle" font-size="12.5" fill="#1a4f8f">第二段:追加可保留旧前缀</text>
+  <text x="745" y="168" text-anchor="middle" font-size="12.5" fill="#7d4e00">第三段:每轮变化</text>
+  <text x="745" y="192" text-anchor="middle" font-size="12.5" fill="#7d4e00">命中仍由服务商决定</text>
+
+  <line x1="600" y1="97" x2="626" y2="97" stroke="#2da44e" stroke-width="1.5"/>
+  <line x1="600" y1="179" x2="626" y2="179" stroke="#2da44e" stroke-width="1.5"/>
+  <line x1="600" y1="261" x2="626" y2="261" stroke="#d4a72c" stroke-width="1.5"/>
+
+  <!-- 反模式警示 -->
+  <rect x="60" y="330" width="800" height="104" rx="10" fill="#fddbcc" stroke="#cf5b4d" stroke-width="1.5"/>
+  <text x="460" y="358" text-anchor="middle" font-size="13.5" font-weight="600" fill="#932b1f">头号反模式:改写系统提示词注入动态信息(如"当前目录是 X")</text>
+  <text x="460" y="384" text-anchor="middle" font-size="12.5" fill="#932b1f">前缀变一个字符,从变化处起不再复用原来的缓存结果</text>
+  <text x="460" y="410" text-anchor="middle" font-size="12.5" fill="#57606a">更稳妥:稳定说明在前,动态快照在后;压缩与配置更新会重建历史,需要记录版本</text>
+</svg>

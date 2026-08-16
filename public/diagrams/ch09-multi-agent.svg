@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 520" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="520" fill="#ffffff"/>
+
+  <text x="440" y="22" text-anchor="middle" font-size="14" font-weight="600" fill="#24292f">推荐的上下文分工;创建时可选择带入多少已有历史</text>
+
+  <!-- 主 Agent -->
+  <rect x="300" y="40" width="280" height="76" rx="12" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.8"/>
+  <text x="440" y="70" text-anchor="middle" font-size="15" font-weight="600" fill="#1a4f8f">主 Agent(分配任务并汇总)</text>
+  <text x="440" y="96" text-anchor="middle" font-size="12.5" fill="#1a4f8f">只接收结论、证据和文件路径,不接收全部过程</text>
+
+  <!-- 任务书 -->
+  <line x1="360" y1="116" x2="190" y2="180" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="520" y1="116" x2="690" y2="180" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="240" y="140" font-size="12" fill="#57606a">自包含任务书(spawn)</text>
+  <text x="610" y="140" font-size="12" fill="#57606a">自包含任务书(spawn)</text>
+
+  <!-- 子 Agent A -->
+  <rect x="60" y="184" width="260" height="150" rx="12" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="190" y="212" text-anchor="middle" font-size="14" font-weight="600" fill="#24292f">子 Agent A:独立后续会话</text>
+  <text x="190" y="238" text-anchor="middle" font-size="12" fill="#57606a">搜过的文件 · 失败的尝试</text>
+  <text x="190" y="258" text-anchor="middle" font-size="12" fill="#57606a">无关的输出 ……</text>
+  <text x="190" y="284" text-anchor="middle" font-size="12" fill="#8b949e">初始历史可为空、复制或取父会话前缀</text>
+  <text x="190" y="312" text-anchor="middle" font-size="12" fill="#116329">完整产物写入文件 → 只回传结论</text>
+
+  <!-- 子 Agent B -->
+  <rect x="560" y="184" width="260" height="150" rx="12" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="690" y="212" text-anchor="middle" font-size="14" font-weight="600" fill="#24292f">子 Agent B:独立后续会话</text>
+  <text x="690" y="238" text-anchor="middle" font-size="12" fill="#57606a">独立的检索与验证</text>
+  <text x="690" y="258" text-anchor="middle" font-size="12" fill="#57606a">不会加入 A 的无关历史</text>
+  <text x="690" y="284" text-anchor="middle" font-size="12" fill="#8b949e">(可并行执行)</text>
+  <text x="690" y="312" text-anchor="middle" font-size="12" fill="#116329">完整产物写入文件 → 只回传结论</text>
+
+  <!-- 结论回传 -->
+  <path d="M 190 334 C 190 400, 350 400, 400 368" fill="none" stroke="#2da44e" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <path d="M 690 334 C 690 400, 530 400, 480 368" fill="none" stroke="#2da44e" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="240" y="392" font-size="12" fill="#116329">简短结论 + 证据路径</text>
+  <text x="640" y="392" font-size="12" fill="#116329">简短结论 + 证据路径</text>
+
+  <!-- 大内容写入文件 -->
+  <rect x="330" y="300" width="220" height="64" rx="10" fill="#fff8e6" stroke="#d4a72c" stroke-width="1.5"/>
+  <text x="440" y="326" text-anchor="middle" font-size="13.5" font-weight="600" fill="#7d4e00">大内容写入文件</text>
+  <text x="440" y="350" text-anchor="middle" font-size="12" fill="#7d4e00">消息传文件引用;需要完整性检查时附 hash</text>
+
+  <!-- 对比条 -->
+  <rect x="60" y="430" width="760" height="70" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="440" y="458" text-anchor="middle" font-size="13" fill="#57606a">单 Agent:任务 A/B/C 的全部过程都进一个窗口 → 无关内容持续增加</text>
+  <text x="440" y="484" text-anchor="middle" font-size="13" fill="#116329">多 Agent:每个任务有独立的后续会话;初始历史可选,结果按明确协议返回</text>
+</svg>

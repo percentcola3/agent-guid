@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 400" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="400" fill="#ffffff"/>
+
+  <!-- 状态机 -->
+  <rect x="40" y="60" width="120" height="44" rx="22" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="100" y="87" text-anchor="middle" font-size="13.5" fill="#24292f">created</text>
+
+  <line x1="160" y1="82" x2="212" y2="82" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="216" y="60" width="120" height="44" rx="22" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.8"/>
+  <text x="276" y="87" text-anchor="middle" font-size="13.5" fill="#1a4f8f">running</text>
+
+  <!-- running → 最终状态 -->
+  <line x1="336" y1="70" x2="452" y2="40" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="336" y1="82" x2="452" y2="82" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="336" y1="94" x2="452" y2="124" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="276" y1="104" x2="276" y2="164" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="456" y="20" width="140" height="40" rx="20" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.5"/>
+  <text x="526" y="45" text-anchor="middle" font-size="13" fill="#116329">completed(退出码 0)</text>
+  <rect x="456" y="62" width="140" height="40" rx="20" fill="#fddbcc" stroke="#cf5b4d" stroke-width="1.5"/>
+  <text x="526" y="87" text-anchor="middle" font-size="13" fill="#932b1f">failed(非零/超时)</text>
+  <rect x="456" y="104" width="140" height="40" rx="20" fill="#fff8e6" stroke="#d4a72c" stroke-width="1.5"/>
+  <text x="526" y="129" text-anchor="middle" font-size="13" fill="#7d4e00">orphaned(查无进程)</text>
+
+  <!-- stopping -->
+  <rect x="216" y="168" width="120" height="44" rx="22" fill="#fff8e6" stroke="#d4a72c" stroke-width="1.5"/>
+  <text x="276" y="195" text-anchor="middle" font-size="13.5" fill="#7d4e00">stopping</text>
+  <text x="196" y="150" font-size="11.5" fill="#57606a">kill(显式终止)</text>
+
+  <line x1="336" y1="190" x2="452" y2="190" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="456" y="170" width="140" height="40" rx="20" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="526" y="195" text-anchor="middle" font-size="13" fill="#24292f">killed</text>
+  <text x="396" y="182" font-size="11" fill="#57606a">SIGTERM→宽限期→SIGKILL(dsh 默认 3s)</text>
+
+  <!-- 伴随资源 -->
+  <rect x="640" y="20" width="216" height="190" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="748" y="46" text-anchor="middle" font-size="13.5" font-weight="600" fill="#24292f">每个 job 还要保存</text>
+  <text x="748" y="74" text-anchor="middle" font-size="12" fill="#57606a">页面显示尾部;可用时另存完整输出</text>
+  <text x="748" y="98" text-anchor="middle" font-size="12" fill="#57606a">增量读取:上次读到哪(outputOffset)</text>
+  <text x="748" y="122" text-anchor="middle" font-size="12" fill="#57606a">进程组:终止同组进程;脱组另处理</text>
+  <text x="748" y="146" text-anchor="middle" font-size="12" fill="#57606a">完成:支持时通知,也可主动读取</text>
+  <text x="748" y="170" text-anchor="middle" font-size="12" fill="#57606a">owner:谁有权取消 / 谁负责清理</text>
+  <text x="748" y="194" text-anchor="middle" font-size="12" fill="#57606a">重启后:重连 / 留后台 / 标记失联</text>
+
+  <!-- 底部三问 -->
+  <rect x="40" y="250" width="800" height="110" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="440" y="278" text-anchor="middle" font-size="13.5" font-weight="600" fill="#24292f">job 每次改变状态时都要回答</text>
+  <text x="440" y="304" text-anchor="middle" font-size="12.5" fill="#57606a">① 从哪里继续读取输出 · ② 完成通知放进下一次模型请求,不要打断当前回复</text>
+  <text x="440" y="328" text-anchor="middle" font-size="12.5" fill="#57606a">③ 会话结束时谁负责清理 · ④ 同一完成通知只发送一次</text>
+  <text x="440" y="352" text-anchor="middle" font-size="12.5" fill="#57606a">⑤ 重启后能否重新连接 · ⑥ 只允许 owner 取消,不要全局 killAll</text>
+</svg>

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 470" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+    <marker id="arrowb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3c8cff"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="470" fill="#ffffff"/>
+
+  <!-- 两条生命线 -->
+  <rect x="80" y="30" width="240" height="48" rx="10" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.8"/>
+  <text x="200" y="60" text-anchor="middle" font-size="14.5" font-weight="600" fill="#1a4f8f">Agent(MCP Client)</text>
+  <line x1="200" y1="78" x2="200" y2="392" stroke="#3c8cff" stroke-width="1.5"/>
+
+  <rect x="560" y="30" width="240" height="48" rx="10" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.8"/>
+  <text x="680" y="60" text-anchor="middle" font-size="14.5" font-weight="600" fill="#116329">MCP Server(本地或远程)</text>
+  <line x1="680" y1="78" x2="680" y2="392" stroke="#2da44e" stroke-width="1.5"/>
+
+  <!-- ① initialize -->
+  <line x1="200" y1="112" x2="676" y2="112" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="438" y="104" text-anchor="middle" font-size="12.5" fill="#24292f">① initialize(握手:协议版本 + 能力协商)</text>
+  <line x1="680" y1="140" x2="204" y2="140" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <text x="438" y="132" text-anchor="middle" font-size="12.5" fill="#57606a">← capabilities</text>
+
+  <!-- ② tools/list -->
+  <line x1="200" y1="184" x2="676" y2="184" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="438" y="176" text-anchor="middle" font-size="12.5" fill="#24292f">② tools/list(发现:这个 server 有哪些工具)</text>
+  <line x1="680" y1="212" x2="204" y2="212" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <text x="438" y="204" text-anchor="middle" font-size="12.5" fill="#57606a">← [schema, schema, …](DSH 客户端使用 mcp__server__tool 前缀)</text>
+
+  <!-- ③ tools/call -->
+  <line x1="200" y1="256" x2="676" y2="256" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="438" y="248" text-anchor="middle" font-size="12.5" fill="#24292f">③ tools/call(name, arguments) —— 模型发起调用</text>
+  <line x1="680" y1="284" x2="204" y2="284" stroke="#57606a" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <text x="438" y="276" text-anchor="middle" font-size="12.5" fill="#57606a">← result(客户端自行设置输出上限与保存方式)</text>
+
+  <!-- ④ 通知 -->
+  <line x1="680" y1="328" x2="204" y2="328" stroke="#8b949e" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+  <text x="438" y="320" text-anchor="middle" font-size="12.5" fill="#8b949e">notifications(资源变化等;连接内通知 ≠ 持久调度器)</text>
+
+  <!-- 传输注 -->
+  <rect x="80" y="360" width="720" height="56" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="440" y="384" text-anchor="middle" font-size="12.5" fill="#57606a">传输:stdio(本地子进程)或 Streamable HTTP(远程);连接组织方式由客户端决定</text>
+  <text x="440" y="406" text-anchor="middle" font-size="12.5" fill="#57606a">调用顺序:先 initialize 握手 → notifications/initialized → 再 tools/list</text>
+
+  <!-- 底部要点 -->
+  <text x="440" y="444" text-anchor="middle" font-size="13" fill="#116329">MCP 的主要价值是复用;能否直接接入取决于协议版本、传输、能力与认证是否兼容</text>
+  <text x="440" y="462" text-anchor="middle" font-size="11.5" fill="#57606a">它统一通信方式,不保证性能、安全或客户端支持全部功能</text>
+</svg>

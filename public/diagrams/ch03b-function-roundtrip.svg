@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 640" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3c8cff"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2da44e"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="640" fill="#ffffff"/>
+
+  <!-- 两个参与者 -->
+  <rect x="120" y="16" width="160" height="48" rx="10" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.5"/>
+  <text x="200" y="45" text-anchor="middle" font-size="15" font-weight="600" fill="#1a4f8f">LLM（模型）</text>
+
+  <rect x="560" y="16" width="200" height="48" rx="10" fill="#fff8e6" stroke="#d4a72c" stroke-width="1.5"/>
+  <text x="660" y="45" text-anchor="middle" font-size="15" font-weight="600" fill="#7d4e00">Agent（你的代码）</text>
+
+  <!-- 生命线 -->
+  <line x1="200" y1="64" x2="200" y2="560" stroke="#d0d7de" stroke-width="1.2" stroke-dasharray="5 5"/>
+  <line x1="660" y1="64" x2="660" y2="560" stroke="#d0d7de" stroke-width="1.2" stroke-dasharray="5 5"/>
+
+  <!-- ① 请求:Agent → LLM -->
+  <line x1="655" y1="112" x2="208" y2="112" stroke="#57606a" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="430" y="98" text-anchor="middle" font-size="13.5" font-weight="600" fill="#24292f">① 请求:messages(前文)+ tools(以 Chat Completions 为例)</text>
+  <text x="430" y="130" text-anchor="middle" font-size="12" fill="#57606a">模型能看到的历史 + 可以调用的工具及参数说明</text>
+
+  <!-- ② 响应:LLM → Agent -->
+  <line x1="205" y1="176" x2="652" y2="176" stroke="#3c8cff" stroke-width="1.6" marker-end="url(#arrowBlue)"/>
+  <text x="430" y="162" text-anchor="middle" font-size="13.5" font-weight="600" fill="#1a4f8f">② 示例响应:tool_calls = [{ id, name, arguments: JSON 字符串 }]</text>
+  <text x="430" y="194" text-anchor="middle" font-size="12" fill="#57606a">模型不执行任何东西,它只是"说"要调什么</text>
+
+  <!-- ③ 执行(Agent 内部) -->
+  <line x1="660" y1="176" x2="660" y2="216" stroke="#57606a" stroke-width="1.4" stroke-dasharray="3 3"/>
+  <rect x="500" y="216" width="330" height="196" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="665" y="240" text-anchor="middle" font-size="13.5" font-weight="600" fill="#24292f">③ 从 JSON 到真正的函数调用</text>
+
+  <rect x="520" y="252" width="290" height="24" rx="5" fill="#ffffff" stroke="#d0d7de" stroke-width="1"/>
+  <text x="534" y="268" font-size="12.5" fill="#24292f">解析:字符串 → 对象;失败时依次尝试已知修复</text>
+  <rect x="520" y="281" width="290" height="24" rx="5" fill="#ffffff" stroke="#d0d7de" stroke-width="1"/>
+  <text x="534" y="297" font-size="12.5" fill="#24292f">校验:形态 + schema(必填/类型)</text>
+  <rect x="520" y="310" width="290" height="24" rx="5" fill="#ffffff" stroke="#d0d7de" stroke-width="1"/>
+  <text x="534" y="326" font-size="12.5" fill="#24292f">查表:注册表 name → handler(找不到≠崩溃)</text>
+  <rect x="520" y="339" width="290" height="24" rx="5" fill="#ffffff" stroke="#d0d7de" stroke-width="1"/>
+  <text x="534" y="355" font-size="12.5" fill="#24292f">执行:独立边界(超时/取消/沙箱/错误隔离)</text>
+  <rect x="520" y="368" width="290" height="24" rx="5" fill="#ffffff" stroke="#d0d7de" stroke-width="1"/>
+  <text x="534" y="384" font-size="12.5" fill="#24292f">格式化:限制长度、标明截断、大对象只返回引用</text>
+
+  <!-- ④ 组装(全宽绿条) -->
+  <line x1="660" y1="412" x2="660" y2="426" stroke="#2da44e" stroke-width="1.6" marker-end="url(#arrowGreen)"/>
+  <rect x="100" y="430" width="680" height="66" rx="10" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.5"/>
+  <text x="440" y="454" text-anchor="middle" font-size="13.5" font-weight="600" fill="#116329">④ 组装下一次请求:前文 + assistant(tool_calls) + tool(结果,与 id 一一配对)</text>
+  <text x="440" y="476" text-anchor="middle" font-size="12" fill="#116329">历史只追加、不改动 → 保留前缀缓存机会;N 个调用就回填 N 条结果</text>
+
+  <!-- ⑤ 回到 ① -->
+  <line x1="655" y1="536" x2="208" y2="536" stroke="#57606a" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="430" y="522" text-anchor="middle" font-size="13.5" font-weight="600" fill="#24292f">⑤ 下一轮请求(= ①,但前文已包含本次执行结果)</text>
+
+  <!-- 底部警示 -->
+  <rect x="100" y="574" width="680" height="40" rx="8" fill="#fddbcc" stroke="#cf5b4d" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="440" y="599" text-anchor="middle" font-size="12.5" fill="#8a2f23">漏回或错配工具结果 → 通常会被服务端拒绝;改写旧历史还会降低缓存复用并增加恢复难度</text>
+  <text x="440" y="632" text-anchor="middle" font-size="11.5" fill="#57606a">Anthropic 等接口使用不同消息形状;接入层应转换为 Agent 的统一事件</text>
+</svg>

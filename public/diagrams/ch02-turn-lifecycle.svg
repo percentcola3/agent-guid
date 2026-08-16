@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 620" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="620" fill="#ffffff"/>
+
+  <!-- ① 用户输入 -->
+  <rect x="330" y="16" width="220" height="40" rx="20" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.5"/>
+  <text x="440" y="41" text-anchor="middle" font-size="15" fill="#1a4f8f">① 用户输入</text>
+  <line x1="440" y1="56" x2="440" y2="82" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ② 组装上下文 -->
+  <rect x="140" y="86" width="600" height="170" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="160" y="112" font-size="15" font-weight="600" fill="#24292f">② 准备发给模型的上下文</text>
+
+  <rect x="160" y="122" width="560" height="38" rx="6" fill="#e6f6ec" stroke="#2da44e" stroke-width="1"/>
+  <text x="176" y="146" font-size="13.5" fill="#116329">稳定前缀:系统提示词 | AGENTS.md | 工具定义</text>
+  <rect x="596" y="130" width="112" height="22" rx="11" fill="#2da44e"/>
+  <text x="652" y="145" text-anchor="middle" font-size="11.5" fill="#ffffff">保留命中机会</text>
+
+  <rect x="160" y="166" width="560" height="34" rx="6" fill="#ffffff" stroke="#d0d7de" stroke-width="1"/>
+  <text x="176" y="188" font-size="13.5" fill="#24292f">模型可见历史(通常追加;压缩时重建)</text>
+
+  <rect x="160" y="206" width="560" height="34" rx="6" fill="#fff8e6" stroke="#d4a72c" stroke-width="1"/>
+  <text x="176" y="228" font-size="13.5" fill="#7d4e00">动态尾巴:环境状态快照(cwd / git / 时间 / 预算)</text>
+
+  <line x1="440" y1="256" x2="440" y2="286" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- agentic loop 虚线框 -->
+  <rect x="288" y="278" width="584" height="180" rx="14" fill="none" stroke="#3c8cff" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text x="304" y="300" font-size="13" font-weight="600" fill="#3c8cff">agentic loop(ReAct:想 → 做 → 看)</text>
+
+  <!-- ③④ 调 LLM -->
+  <rect x="308" y="312" width="252" height="48" rx="8" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.5"/>
+  <text x="434" y="341" text-anchor="middle" font-size="14" fill="#1a4f8f">③ 调 LLM(流式)</text>
+
+  <line x1="434" y1="360" x2="434" y2="384" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 判定 -->
+  <rect x="308" y="388" width="252" height="44" rx="22" fill="#ffffff" stroke="#57606a" stroke-width="1.5"/>
+  <text x="434" y="415" text-anchor="middle" font-size="14" fill="#24292f">④ 本轮还有工具调用?</text>
+
+  <!-- YES → ⑤ 执行工具 -->
+  <line x1="560" y1="410" x2="636" y2="410" stroke="#2da44e" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="598" y="402" text-anchor="middle" font-size="12" fill="#116329">是</text>
+  <rect x="640" y="386" width="216" height="48" rx="8" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.5"/>
+  <text x="748" y="407" text-anchor="middle" font-size="13.5" fill="#116329">⑤ 执行工具</text>
+  <text x="748" y="425" text-anchor="middle" font-size="12" fill="#116329">(经沙箱 / 权限校验)</text>
+
+  <!-- ⑥ 回填,loop 回 LLM -->
+  <path d="M 748 386 L 748 336 L 566 336" fill="none" stroke="#2da44e" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="762" y="364" font-size="12.5" fill="#116329">⑥ 回填结果</text>
+
+  <!-- NO → ⑦ -->
+  <line x1="434" y1="432" x2="434" y2="492" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="448" y="464" font-size="12" fill="#57606a">否</text>
+
+  <rect x="308" y="496" width="252" height="52" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="434" y="518" text-anchor="middle" font-size="14" fill="#24292f">⑦ 输出文字回答</text>
+  <text x="434" y="537" text-anchor="middle" font-size="12.5" fill="#57606a">本轮(turn)结束</text>
+
+  <!-- 底部注释 -->
+  <text x="440" y="592" text-anchor="middle" font-size="13" fill="#57606a">③→⑥ 会反复执行,直到模型不再请求工具;第 3 章详细说明这段过程</text>
+</svg>

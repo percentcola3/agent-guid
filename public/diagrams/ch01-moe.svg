@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 500" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="500" fill="#ffffff"/>
+
+  <!-- 左:稠密模型 -->
+  <rect x="20" y="46" width="400" height="380" rx="12" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="220" y="76" text-anchor="middle" font-size="15" font-weight="600" fill="#24292f">稠密 Transformer 块</text>
+
+  <rect x="140" y="94" width="160" height="36" rx="18" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.5"/>
+  <text x="220" y="117" text-anchor="middle" font-size="13.5" fill="#1a4f8f">token</text>
+  <line x1="220" y1="130" x2="220" y2="154" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="120" y="158" width="200" height="40" rx="8" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.5"/>
+  <text x="220" y="183" text-anchor="middle" font-size="13.5" fill="#1a4f8f">Attention</text>
+  <line x1="220" y1="198" x2="220" y2="222" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="120" y="226" width="200" height="52" rx="8" fill="#fff8e6" stroke="#d4a72c" stroke-width="1.5"/>
+  <text x="220" y="248" text-anchor="middle" font-size="13.5" fill="#7d4e00">FFN × 1</text>
+  <text x="220" y="267" text-anchor="middle" font-size="12" fill="#7d4e00">(所有 token 走同一个)</text>
+
+  <text x="220" y="330" text-anchor="middle" font-size="13" fill="#57606a">每个 token 都经过同一个 FFN;</text>
+  <text x="220" y="354" text-anchor="middle" font-size="13" fill="#57606a">这个 FFN 的全部参数都会参与计算</text>
+  <text x="220" y="404" text-anchor="middle" font-size="12.5" fill="#8b949e">总参数和每 token 的计算量联系较紧</text>
+
+  <!-- 右:MoE -->
+  <rect x="460" y="46" width="400" height="380" rx="12" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="660" y="76" text-anchor="middle" font-size="15" font-weight="600" fill="#24292f">一个 MoE 块(以 DeepSeek-V3 为例)</text>
+
+  <rect x="580" y="94" width="160" height="36" rx="18" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.5"/>
+  <text x="660" y="117" text-anchor="middle" font-size="13.5" fill="#1a4f8f">token</text>
+  <line x1="660" y1="130" x2="660" y2="154" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="560" y="158" width="200" height="40" rx="8" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.5"/>
+  <text x="660" y="183" text-anchor="middle" font-size="13.5" fill="#1a4f8f">Attention</text>
+  <line x1="660" y1="198" x2="660" y2="222" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="540" y="226" width="240" height="40" rx="20" fill="#fddbcc" stroke="#cf5b4d" stroke-width="1.5"/>
+  <text x="660" y="251" text-anchor="middle" font-size="13.5" fill="#932b1f">路由器:给 token 打分挑专家</text>
+
+  <line x1="600" y1="266" x2="528" y2="296" stroke="#57606a" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="660" y1="266" x2="648" y2="296" stroke="#57606a" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="720" y1="266" x2="768" y2="296" stroke="#57606a" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <rect x="486" y="300" width="154" height="34" rx="6" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.5"/>
+  <text x="563" y="322" text-anchor="middle" font-size="12.5" fill="#116329">本 token 选中 8 个</text>
+  <rect x="650" y="300" width="186" height="34" rx="6" fill="#ffffff" stroke="#d0d7de" stroke-width="1"/>
+  <text x="743" y="322" text-anchor="middle" font-size="12.5" fill="#8b949e">其余 248 个不参与本次计算</text>
+
+  <rect x="540" y="342" width="240" height="34" rx="6" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.2"/>
+  <text x="660" y="364" text-anchor="middle" font-size="12.5" fill="#1a4f8f">另有 1 个共享专家参与每个 token</text>
+
+  <text x="660" y="404" text-anchor="middle" font-size="12.5" fill="#8b949e">前 3 个 Transformer 块仍使用稠密 FFN</text>
+
+  <!-- 底部账单 -->
+  <rect x="20" y="444" width="840" height="42" rx="8" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1"/>
+  <text x="440" y="470" text-anchor="middle" font-size="13.5" fill="#1a4f8f">DeepSeek-V3:总参数 671B,每 token 激活约 37B;实际速度还取决于通信、硬件和实现</text>
+</svg>

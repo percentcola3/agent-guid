@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 470" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="470" fill="#ffffff"/>
+
+  <!-- 模型服务字节 -->
+  <rect x="60" y="30" width="190" height="56" rx="10" fill="#fddbcc" stroke="#cf5b4d" stroke-width="1.5"/>
+  <text x="155" y="54" text-anchor="middle" font-size="13.5" font-weight="600" fill="#932b1f">模型服务的字节流</text>
+  <text x="155" y="75" text-anchor="middle" font-size="11.5" fill="#932b1f">任意字节块,非一条 JSON</text>
+
+  <line x1="250" y1="58" x2="288" y2="58" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="269" y="46" text-anchor="middle" font-size="10.5" fill="#57606a">解码</text>
+
+  <!-- 模型服务事件 -->
+  <rect x="292" y="30" width="200" height="56" rx="10" fill="#fff8e6" stroke="#d4a72c" stroke-width="1.5"/>
+  <text x="392" y="54" text-anchor="middle" font-size="13.5" font-weight="600" fill="#7d4e00">模型服务的事件</text>
+  <text x="392" y="75" text-anchor="middle" font-size="11.5" fill="#7d4e00">TextDecoder + SSE/JSON 分帧</text>
+
+  <line x1="492" y1="58" x2="530" y2="58" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="511" y="46" text-anchor="middle" font-size="10.5" fill="#57606a">转换</text>
+
+  <!-- AgentEvent -->
+  <rect x="534" y="20" width="286" height="76" rx="12" fill="#eaf3ff" stroke="#3c8cff" stroke-width="2"/>
+  <text x="677" y="48" text-anchor="middle" font-size="14.5" font-weight="700" fill="#1a4f8f">AgentEvent(本书建议的统一格式)</text>
+  <text x="677" y="72" text-anchor="middle" font-size="11.5" fill="#1a4f8f">sessionId / seq / turnId / stepId / attemptId</text>
+  <text x="677" y="88" text-anchor="middle" font-size="10.8" fill="#1a4f8f">itemId / toolCallId / jobId / requestId + durable 标记</text>
+
+  <line x1="677" y1="96" x2="677" y2="140" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="695" y="124" font-size="11.5" fill="#57606a">更新状态</text>
+
+  <!-- store -->
+  <rect x="534" y="144" width="286" height="60" rx="10" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.5"/>
+  <text x="677" y="170" text-anchor="middle" font-size="13.5" font-weight="600" fill="#116329">按对象 ID 保存 UI 状态</text>
+  <text x="677" y="192" text-anchor="middle" font-size="11.5" fill="#116329">组件只订阅需要的记录;按浏览器刷新帧批量更新</text>
+
+  <line x1="677" y1="204" x2="677" y2="244" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 组件 -->
+  <rect x="534" y="248" width="286" height="52" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="677" y="279" text-anchor="middle" font-size="13.5" fill="#24292f">Vue / React 组件</text>
+
+  <!-- 边界标注 -->
+  <path d="M 534 108 L 516 108 L 516 300 L 534 300" fill="none" stroke="#3c8cff" stroke-width="1.2" stroke-dasharray="5 4"/>
+  <text x="510" y="204" text-anchor="middle" transform="rotate(-90 510 204)" font-size="11.5" fill="#3c8cff">统一格式</text>
+
+  <!-- 左下:四类问题 -->
+  <rect x="60" y="130" width="420" height="170" rx="12" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="270" y="158" text-anchor="middle" font-size="13.5" font-weight="600" fill="#24292f">为什么不能把原始数据块直接交给组件?</text>
+  <text x="84" y="186" font-size="12.5" fill="#57606a">① 字节块会从任意位置切开(中文 / SSE 半帧)</text>
+  <text x="84" y="212" font-size="12.5" fill="#57606a">② 更换模型服务时字段会变,组件不应跟着改</text>
+  <text x="84" y="238" font-size="12.5" fill="#57606a">③ 重连时历史与实时事件重叠,直接追加会产生重复</text>
+  <text x="84" y="264" font-size="12.5" fill="#57606a">④ 本书约定 delta 是片段,completed 是完整结果</text>
+  <text x="84" y="290" font-size="12" fill="#8b949e">(工具参数:流中只拼接,完整后才解析 → 13.2)</text>
+
+  <!-- 底部:两侧职责 -->
+  <rect x="60" y="330" width="380" height="106" rx="10" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.2"/>
+  <text x="250" y="358" text-anchor="middle" font-size="13" font-weight="600" fill="#1a4f8f">每个模型服务各写一个转换器</text>
+  <text x="250" y="384" text-anchor="middle" font-size="12" fill="#1a4f8f">按服务规则拼完整内容块、文本和工具参数</text>
+  <text x="250" y="408" text-anchor="middle" font-size="12" fill="#1a4f8f">按本书公共字段输出 AgentEvent;私有字段留在适配层</text>
+  <text x="250" y="428" text-anchor="middle" font-size="11.5" fill="#8b949e">不负责 Vue store / 滚动 / 审批弹窗</text>
+
+  <rect x="470" y="330" width="350" height="106" rx="10" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.2"/>
+  <text x="645" y="358" text-anchor="middle" font-size="13" font-weight="600" fill="#116329">状态更新必须满足三点</text>
+  <text x="645" y="384" text-anchor="middle" font-size="12" fill="#116329">同一 (sessionId, seq) 处理两次也不产生重复</text>
+  <text x="645" y="408" text-anchor="middle" font-size="12" fill="#116329">完整历史与“历史 + 实时补发”得到相同状态</text>
+  <text x="645" y="428" text-anchor="middle" font-size="12" fill="#116329">本书约定:completed 替换 partial,不能重复追加</text>
+</svg>

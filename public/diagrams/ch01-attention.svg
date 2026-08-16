@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3c8cff"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1000" height="400" fill="#ffffff"/>
+
+  <!-- 弧线标注:示意某个注意力头可能如何分配权重 -->
+  <text x="452" y="26" text-anchor="middle" font-size="15" font-weight="600" fill="#24292f">一个注意力头可能更关注 "cat"</text>
+  <text x="452" y="48" text-anchor="middle" font-size="13" fill="#57606a">示意图:数字是虚构样例,不是实测结果</text>
+  <path d="M 740,116 C 740,54 164,54 164,112" fill="none" stroke="#3c8cff" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+  <!-- token 格子行(等宽格子,杜绝对齐问题) -->
+  <g font-size="15" text-anchor="middle">
+    <rect x="26"  y="120" width="84" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
+    <text x="68"  y="145" fill="#24292f">The</text>
+    <rect x="122" y="120" width="84" height="40" rx="8" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.5"/>
+    <text x="164" y="145" fill="#116329" font-weight="600">cat</text>
+    <rect x="218" y="120" width="84" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
+    <text x="260" y="145" fill="#24292f">sat</text>
+    <rect x="314" y="120" width="84" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
+    <text x="356" y="145" fill="#24292f">on</text>
+    <rect x="410" y="120" width="84" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
+    <text x="452" y="145" fill="#24292f">the</text>
+    <rect x="506" y="120" width="84" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
+    <text x="548" y="145" fill="#24292f">mat</text>
+    <rect x="602" y="120" width="84" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
+    <text x="644" y="145" fill="#24292f">because</text>
+    <rect x="698" y="120" width="84" height="40" rx="8" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.5"/>
+    <text x="740" y="145" fill="#1a4f8f" font-weight="600">it</text>
+    <rect x="794" y="120" width="84" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
+    <text x="836" y="145" fill="#24292f">was</text>
+    <rect x="890" y="120" width="84" height="40" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
+    <text x="932" y="145" fill="#24292f">tired</text>
+  </g>
+
+  <!-- 权重柱(虚构的一组注意力权重,只用于说明机制) -->
+  <g>
+    <rect x="50"  y="286" width="36" height="4"  fill="#afb8c1"/>
+    <rect x="146" y="200" width="36" height="90" fill="#2da44e"/>
+    <rect x="242" y="287" width="36" height="3"  fill="#afb8c1"/>
+    <rect x="338" y="286" width="36" height="4"  fill="#afb8c1"/>
+    <rect x="434" y="286" width="36" height="4"  fill="#afb8c1"/>
+    <rect x="530" y="280" width="36" height="10" fill="#afb8c1"/>
+    <rect x="626" y="280" width="36" height="10" fill="#afb8c1"/>
+    <rect x="722" y="230" width="36" height="60" fill="#3c8cff"/>
+    <rect x="818" y="282" width="36" height="8"  fill="#afb8c1"/>
+    <rect x="914" y="282" width="36" height="8"  fill="#afb8c1"/>
+  </g>
+  <line x1="40" y1="292" x2="960" y2="292" stroke="#d0d7de" stroke-width="1"/>
+
+  <!-- 权重数值 -->
+  <g font-size="12.5" text-anchor="middle" fill="#57606a">
+    <text x="68"  y="280">0.02</text>
+    <text x="164" y="194" fill="#116329" font-weight="600">0.45</text>
+    <text x="260" y="281">0.01</text>
+    <text x="356" y="280">0.02</text>
+    <text x="452" y="280">0.02</text>
+    <text x="548" y="274">0.05</text>
+    <text x="644" y="274">0.05</text>
+    <text x="740" y="224" fill="#1a4f8f" font-weight="600">0.30</text>
+    <text x="836" y="276">0.04</text>
+    <text x="932" y="276">0.04</text>
+  </g>
+
+  <!-- 图注 -->
+  <text x="68" y="326" font-size="13" fill="#57606a">柱高 = 这个注意力头为各 token 分配的示例权重(整行加总 = 1)</text>
+  <text x="68" y="350" font-size="13" fill="#24292f">一次 attention 会把前文信息混入 "it" 的表示;单个头不等于模型已可靠完成指代消解</text>
+</svg>

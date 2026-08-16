@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 430" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="430" fill="#ffffff"/>
+
+  <!-- Agent 内部位于模型之外的运行程序 -->
+  <rect x="330" y="24" width="220" height="46" rx="10" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.8"/>
+  <text x="440" y="53" text-anchor="middle" font-size="15" font-weight="700" fill="#1a4f8f">Agent 运行程序（Harness）</text>
+
+  <!-- 连接线 -->
+  <line x1="440" y1="70" x2="440" y2="96" stroke="#57606a" stroke-width="1.5"/>
+  <line x1="145" y1="96" x2="600" y2="96" stroke="#57606a" stroke-width="1.5"/>
+  <line x1="145" y1="96" x2="145" y2="122" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="375" y1="96" x2="375" y2="122" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="600" y1="96" x2="600" y2="122" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ① 上下文 -->
+  <rect x="40" y="126" width="210" height="120" rx="10" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.5"/>
+  <text x="145" y="152" text-anchor="middle" font-size="15" font-weight="600" fill="#116329">① 上下文 Context</text>
+  <text x="145" y="176" text-anchor="middle" font-size="12.5" fill="#116329">决定模型能看到什么</text>
+  <text x="145" y="198" text-anchor="middle" font-size="12" fill="#57606a">系统提示词 / AGENTS.md</text>
+  <text x="145" y="216" text-anchor="middle" font-size="12" fill="#57606a">历史 / 检索 / 压缩</text>
+  <text x="145" y="238" text-anchor="middle" font-size="11.5" fill="#8b949e">→ 第 8~11 章</text>
+
+  <!-- ② 工具 -->
+  <rect x="270" y="126" width="210" height="120" rx="10" fill="#fff8e6" stroke="#d4a72c" stroke-width="1.5"/>
+  <text x="375" y="152" text-anchor="middle" font-size="15" font-weight="600" fill="#7d4e00">② 工具 Tools</text>
+  <text x="375" y="176" text-anchor="middle" font-size="12.5" fill="#7d4e00">决定模型能执行什么</text>
+  <text x="375" y="198" text-anchor="middle" font-size="12" fill="#57606a">基础工具 / 注册与执行</text>
+  <text x="375" y="216" text-anchor="middle" font-size="12" fill="#57606a">MCP / Skill / 插件</text>
+  <text x="375" y="238" text-anchor="middle" font-size="11.5" fill="#8b949e">→ 第 3~7、16 章</text>
+
+  <!-- ③④ 安全约束 -->
+  <rect x="500" y="126" width="200" height="120" rx="10" fill="#fddbcc" stroke="#cf5b4d" stroke-width="1.5"/>
+  <text x="600" y="152" text-anchor="middle" font-size="15" font-weight="600" fill="#932b1f">③④ 安全约束</text>
+  <text x="600" y="176" text-anchor="middle" font-size="12.5" fill="#932b1f">隔离执行 + 需要审批的操作</text>
+  <text x="600" y="198" text-anchor="middle" font-size="12" fill="#57606a">网络 / 凭证 / CPU / 内存</text>
+  <text x="600" y="216" text-anchor="middle" font-size="12" fill="#57606a">何时询问用户 / 哪些操作禁止</text>
+  <text x="600" y="238" text-anchor="middle" font-size="11.5" fill="#8b949e">→ 第 12 章</text>
+
+  <!-- 沙箱/权限子弹 -->
+  <rect x="716" y="140" width="124" height="40" rx="8" fill="#ffffff" stroke="#cf5b4d" stroke-width="1.2"/>
+  <text x="778" y="165" text-anchor="middle" font-size="12.5" fill="#932b1f">③ 沙箱:安全执行</text>
+  <rect x="716" y="192" width="124" height="40" rx="8" fill="#ffffff" stroke="#cf5b4d" stroke-width="1.2"/>
+  <text x="778" y="217" text-anchor="middle" font-size="12.5" fill="#932b1f">④ 权限:谁能批准</text>
+  <line x1="700" y1="160" x2="712" y2="160" stroke="#57606a" stroke-width="1.2"/>
+  <line x1="700" y1="212" x2="712" y2="212" stroke="#57606a" stroke-width="1.2"/>
+
+  <!-- 限制、验证和恢复 -->
+  <rect x="40" y="286" width="800" height="76" rx="10" fill="#f6f8fa" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text x="440" y="314" text-anchor="middle" font-size="14.5" font-weight="600" fill="#24292f">运行前限制 · 运行后验证 · 失败后恢复</text>
+  <text x="440" y="340" text-anchor="middle" font-size="12.5" fill="#57606a">限制可访问范围 · 用测试/lint 检查结果 · 用重试、文件快照或 git 恢复 → 第 12、17 章</text>
+
+  <text x="440" y="404" text-anchor="middle" font-size="13" fill="#57606a">除了给模型信息和工具,还必须限制权限、检查结果并处理失败</text>
+</svg>

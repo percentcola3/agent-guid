@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 470" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="470" fill="#ffffff"/>
+
+  <text x="440" y="32" text-anchor="middle" font-size="15" font-weight="600" fill="#24292f">工具执行前的检查顺序(本书综合三个项目的做法)</text>
+  <text x="440" y="54" text-anchor="middle" font-size="12" fill="#57606a">不是每个项目都实现了图中的每一种修复;产品应按 provider 和风险选择</text>
+
+  <!-- 模型流式输出 -->
+  <rect x="30" y="190" width="120" height="72" rx="10" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.8"/>
+  <text x="90" y="220" text-anchor="middle" font-size="14" font-weight="600" fill="#1a4f8f">模型</text>
+  <text x="90" y="242" text-anchor="middle" font-size="12.5" fill="#1a4f8f">流式输出</text>
+
+  <line x1="150" y1="226" x2="182" y2="226" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ① 流式接收 -->
+  <rect x="186" y="170" width="130" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="251" y="196" text-anchor="middle" font-size="13.5" font-weight="600" fill="#24292f">① 流式接收</text>
+  <text x="251" y="220" text-anchor="middle" font-size="12" fill="#57606a">截断的输出</text>
+  <text x="251" y="238" text-anchor="middle" font-size="12" fill="#57606a">整体丢弃</text>
+  <text x="251" y="262" text-anchor="middle" font-size="11.5" fill="#cf5b4d">宁可全扔</text>
+  <text x="251" y="277" text-anchor="middle" font-size="11.5" fill="#cf5b4d">不可半执行</text>
+
+  <line x1="316" y1="226" x2="348" y2="226" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ② 参数拼接 -->
+  <rect x="352" y="170" width="130" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="417" y="196" text-anchor="middle" font-size="13.5" font-weight="600" fill="#24292f">② 参数拼接</text>
+  <text x="417" y="220" text-anchor="middle" font-size="12" fill="#57606a">增量只拼接</text>
+  <text x="417" y="238" text-anchor="middle" font-size="12" fill="#57606a">不解析半截 JSON</text>
+  <text x="417" y="262" text-anchor="middle" font-size="11.5" fill="#57606a">迟到 delta 忽略</text>
+  <text x="417" y="277" text-anchor="middle" font-size="11.5" fill="#57606a">缺 id 按适配器规则处理</text>
+
+  <line x1="482" y1="226" x2="514" y2="226" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ③ 修复链 -->
+  <rect x="518" y="150" width="150" height="152" rx="10" fill="#fff8e6" stroke="#d4a72c" stroke-width="1.5"/>
+  <text x="593" y="176" text-anchor="middle" font-size="13.5" font-weight="600" fill="#7d4e00">③ 依次尝试已知修复</text>
+  <text x="593" y="200" text-anchor="middle" font-size="11.5" fill="#7d4e00">空参数 "" 改为 "{}"</text>
+  <text x="593" y="219" text-anchor="middle" font-size="11.5" fill="#7d4e00">拼贴拆分 {a}{b} → 两个</text>
+  <text x="593" y="238" text-anchor="middle" font-size="11.5" fill="#7d4e00">仍失败则包装为 {"raw": 原文}</text>
+  <text x="593" y="257" text-anchor="middle" font-size="11.5" fill="#7d4e00">参数名映射回规范名</text>
+  <text x="593" y="276" text-anchor="middle" font-size="11.5" fill="#7d4e00">工具名别名 Read→read</text>
+  <text x="593" y="295" text-anchor="middle" font-size="11.5" fill="#7d4e00">(grok 最重)</text>
+
+  <line x1="668" y1="226" x2="700" y2="226" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ④ 强类型校验 -->
+  <rect x="704" y="170" width="146" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="777" y="196" text-anchor="middle" font-size="13.5" font-weight="600" fill="#24292f">④ 强类型校验</text>
+  <text x="777" y="220" text-anchor="middle" font-size="12" fill="#57606a">schema 反序列化</text>
+  <text x="777" y="238" text-anchor="middle" font-size="12" fill="#57606a">最后拦截</text>
+  <text x="777" y="262" text-anchor="middle" font-size="11.5" fill="#57606a">通过 → 执行工具</text>
+
+  <!-- 执行 -->
+  <line x1="777" y1="282" x2="777" y2="330" stroke="#2da44e" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="704" y="334" width="146" height="48" rx="10" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.8"/>
+  <text x="777" y="363" text-anchor="middle" font-size="13.5" font-weight="600" fill="#116329">执行工具</text>
+
+  <!-- 失败 → 错误回传 -->
+  <path d="M 593 302 L 593 361 L 640 361" fill="none" stroke="#cf5b4d" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="612" y="352" text-anchor="middle" font-size="11.5" fill="#932b1f">修不好</text>
+
+  <rect x="200" y="334" width="436" height="96" rx="10" fill="#fddbcc" stroke="#cf5b4d" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text x="418" y="360" text-anchor="middle" font-size="13.5" font-weight="600" fill="#932b1f">把错误作为工具结果发给模型,不要让程序直接崩溃</text>
+  <text x="418" y="384" text-anchor="middle" font-size="12.5" fill="#932b1f">错误消息三要素:哪里错 · 你的原文是什么 · 该怎么改</text>
+  <text x="418" y="408" text-anchor="middle" font-size="12.5" fill="#57606a">可恢复的参数/执行错误可回传;策略拒绝、取消或内部故障可直接停止</text>
+
+  <!-- 回填箭头 -->
+  <path d="M 198 382 C 120 382, 90 320, 90 266" fill="none" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="106" y="330" font-size="12" fill="#57606a">按策略继续或停止</text>
+
+  <text x="440" y="456" text-anchor="middle" font-size="13" fill="#57606a">推荐顺序:拒绝截断输出 → 拼接完整参数 → 尝试已知修复 → 最后做类型校验</text>
+</svg>
