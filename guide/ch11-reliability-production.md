@@ -1,3 +1,9 @@
+---
+top: 19
+categories:
+  - 第二部分 · 实现一个 Agent
+---
+
 # 第 18 章 可靠性、任务评估与上线准备
 
 ::: info 本章要解决的问题
@@ -26,7 +32,7 @@
 第 4 级:恢复预算用尽或工具结果未知 → 停止并把原因暴露给用户
 ```
 
-细节见功力:dsh 的 step 循环让插件依次处理 `agent/request-error` 事件,因此**每个插件都可以注册自己的恢复方法**(比如对特定错误码做特殊重试)。还有个反直觉的双重标准:产品模式可以用占位符修补损坏的消息结构,**训练数据收集模式则拒绝修补**——因为合成占位符会污染训练数据(产品宽容、训练严格)。
+dsh 的 step 循环让插件依次处理 `agent/request-error` 事件——错误事件按插件注册顺序传递,先认领的插件决定恢复动作——因此**每个插件都可以注册自己的恢复方法**(比如对特定错误码做特殊重试)。还有个反直觉的双重标准:同一产品通常还会把会话导出为训练数据,合成的修补内容会成为污染样本,因此产品模式可以用占位符修补损坏的消息结构,**训练数据收集模式则拒绝修补**(产品宽容、训练严格)。
 
 ### ② 连接卡死:最危险的失败不是断,是"静默挂起"
 
@@ -69,7 +75,7 @@ tool/start 已记录,tool/result 未记录 → TOOL_OUTCOME_UNKNOWN,先查外部
 问 3:重试安全吗?    幂等性(4.5.3)——LLM 调用安全,带副作用的工具调用不一定
 ```
 
-grok 的重试实现(`xai-grok-sampler/src/retry.rs`)是三问答案的范本——它给**每类错误**单独标了 `is_retryable`,而不是一个全局策略:
+grok 的重试实现是三问答案的范本——它给**每类错误**单独标了 `is_retryable`,而不是一个全局策略:
 
 | 错误类型 | 可重试? | 理由(源码注释原意) |
 |---------|--------|---------------------|
@@ -79,7 +85,7 @@ grok 的重试实现(`xai-grok-sampler/src/retry.rs`)是三问答案的范本—
 | 推理死循环(DoomLoop) | 🔄 换法重采样 | 重试无意义,**换参数**重采样才有意义 |
 | 413/图片超限 | 🔄 减少输入后重试 | 剥掉图片再试(改输入,不是原样重试) |
 
-注意表格里的三种做法:原样重试(瞬态故障)、**修复后重试**(先修 max_tokens)、**减少输入后重试**(剥图)——后两种会先改变输入,这样下一次才有可能变好。dsh 则让插件依次处理 `agent/request-error` 事件,不同插件可以为特定错误码注册恢复方法,按顺序尝试(也是 18.1① 的机制基础)。
+注意表格里的三种做法:原样重试(瞬态故障)、**修复后重试**(先修 max_tokens)、**减少输入后重试**(剥图)——后两种会先改变输入,这样下一次才有可能变好。dsh 的错误恢复则交给 18.1① 介绍的插件链处理。
 
 生产实现还需要三个教程常漏的限制:
 
@@ -138,11 +144,10 @@ max_tokens 截断     → 不用相同输入和上限原样重试;调整上限/�
 - **另开上下文的审查 Agent**:只拿目标、diff 和验证证据,不继承生成过程中的自我辩护
 - **只读的审查 Agent**:除另开上下文外,再用只读沙箱和权限限制,禁止它顺手改产物。codex 的 `guardian` 是这种做法在**危险操作和审批审查**上的例子,但它不负责判断 Goal(跨多轮保存的长期目标)是否完成
 
-grok 的 Goal 新路径更进一步:实现者完成一轮后,由 `evaluator` 和多个 `skeptic verifier` 重新检查目标,`NotAchieved` 的 gaps 会交给下一轮继续修;相同 gap 指纹连续出现则进入 `NoProgressPaused`。这些名称来自源码,但不要把机制写成“任何 Grok 任务都必须通过审查 Agent”:
+grok 的 Goal 新路径更进一步:实现者完成一轮后,由一个评估者和多个“怀疑者”重新检查目标,`NotAchieved`(审查结论:目标未达成)的 gaps 会交给下一轮继续修;相同 gap 指纹连续出现则进入 `NoProgressPaused`(没有进展,暂停)。这些名称来自源码,但不要把机制写成“任何 Grok 任务都必须通过审查 Agent”:
 
-- 审查 Agent 受 Goal 模式和配置开关控制;关闭 `classifier` 时存在 `CompletedWithoutClassifier`
-- 普通 Agent 只有声明 `completion_requirement` 才进入对应的 completion recovery
-- legacy Goal 路径仍存在,并有验证基础设施故障后 `FailOpenAchieved` 的分支
+- 审查 Agent 受 Goal 模式和配置开关控制;关闭分类器时存在 `CompletedWithoutClassifier`(不经分类器检查就标记完成)的分支
+- 验证基础设施故障时,存在 `FailOpenAchieved`(验证设施挂了仍标记目标完成)的分支
 
 所以生产设计必须明确选择:**验证不可用时停止并等待恢复,还是带着风险标记继续**。高风险代码修改建议进入 `infra_paused`,而不是把“验证器挂了”解释为“目标完成了”。
 
@@ -171,6 +176,8 @@ GoalBudget(token/time/cost/deadline)
 | `complete` | 验收条件已有证据 | 最终状态,不会自动继续 |
 
 不要把"本轮停止"写成"目标完成",也不要用一个 `error` 覆盖所有可恢复状态。
+
+子预算粒度是调参负担:起步两层(Goal + attempt)即可,验证预算在引入审查 Agent 后再拆。
 
 ### 保存完成依据:`complete` 状态本身不是证据
 
@@ -242,11 +249,11 @@ GoalBudget(token/time/cost/deadline)
 
 | | codex | grok-build | dsh |
 |---|---|---|---|
-| 持久状态 | State DB 中的 `ThreadGoal` | `goal/state.json` 中的 Goal 协调状态快照 | 会话日志中的 `goal/change` 全量事件 |
+| 持久状态 | State DB 中的线程级 Goal 记录 | 独立快照文件中的 Goal 协调状态 | 会话日志中的 Goal 变更全量事件 |
 | 状态 | Active/Paused/Blocked/UsageLimited/BudgetLimited/Complete | Active、多种 paused、Blocked/BudgetLimited/Complete,另有 Planning/Executing phase | active/paused/blocked/complete |
-| 预算 | token budget + token/time usage | token budget、worker/verify 轮次、classifier cap | `maxGoalRounds` + `roundsStarted` |
-| 并发保护 | Goal 状态锁 + `expected_goal_id`,避免外部更新与空闲时的自动续跑请求穿插 | `Mutex` 让 Goal 更新依次执行;重启时 Planning/Executing 回到 Idle,Active 改为 UserPaused,并清空子 Agent 记录 | `id + revision` 的 CAS(仅版本匹配时更新),旧引用返回 `GOAL_STALE_REVISION` |
-| 进程重启后 | Active Goal 恢复后重新标记 active,空闲时可自动续跑 | Active 恢复为 `UserPaused`,Planning/Executing 归 Idle | 持久记录可保持 active,但进程内执行授权 `activation` 在 session start 时强制设为 `disarmed` |
+| 预算 | token budget + token/time usage | token budget、worker/verify 轮次、分类器调用上限 | Goal 最大轮数上限 + 已启动轮数计数 |
+| 并发保护 | Goal 状态锁 + 预期目标 ID 校验,避免外部更新与空闲时的自动续跑请求穿插 | 互斥锁让 Goal 更新依次执行;重启时 Planning/Executing 回到 Idle,Active 改为用户暂停,并清空子 Agent 记录 | `id + revision` 的 CAS,即仅版本匹配时才更新的原子写;旧引用被拒绝并得到版本过期错误 |
+| 进程重启后 | Active Goal 恢复后重新标记 active,空闲时可自动续跑 | Active 恢复为用户暂停,Planning/Executing 归 Idle | 持久记录可保持 active,但进程内执行授权在会话启动时强制解除,不能自动恢复执行 |
 
 最后一行体现了一个关键取舍:codex 倾向于恢复后继续追目标;grok 与 dsh 恢复已经保存的状态,但收回自动执行权。两种都合理,但教程必须把它写成**产品决策**,而不是把“会话恢复”自动等同于“任务继续”。
 
@@ -366,9 +373,11 @@ grok 的后台任务记录 `owner_session_id`,可以按 owner 列表、转移或
 
 ## 18.6 上线前还要补齐交互、配置、测试与模型选择
 
+故障处理与长任务管理解决的是 Agent 跑得对不对;上线之前还差一组交付问题:用户以什么形态操作、不同成员的机器上行为是否一致、出问题靠什么定位。这几件事看起来零碎,却缺一不可——任何一项缺失,都会在真实用户手里变成具体事故。
+
 **交互形态**:codex 主打终端 TUI(+ headless 模式做 CI/脚本);grok 同为 TUI(+ ACP 协议嵌编辑器);dsh 反其道,主打 **Web UI**(浏览器是它的第一公民,CLI 只是启动器)。三种形态对应三类用户,没有优劣——但 dsh 用 Web 形态换来了审批 UI、diff 卡片这类富交互的天然优势(第 13 章的审批、第 6 章的编辑 diff 卡片都长在 Web 上)。
 
-**配置体系**:多级配置(用户级/项目级/命令行)是标配;codex 甚至为配置生成 JSON Schema(可由程序校验的数据结构说明,见 `config.schema.json`);dsh 的配置即 YAML 插件清单(第 17 章)。
+**配置体系**:多级配置(用户级/项目级/命令行)是标配——没有它,同一仓库在不同成员机器上行为不一致;codex 甚至为配置生成 JSON Schema(可由程序校验的数据结构说明);dsh 的配置即 YAML 插件清单(第 17 章)。
 
 **了解系统正在发生什么**要靠日志、指标和调用追踪。这些数据不能和会话恢复记录混为一谈,至少要分别记录三类:
 
@@ -419,7 +428,7 @@ Agent 改了代码,就要回答 git 的三个问题:**何时提交、怎么写�
               危险命令特判里有专门针对 git 危险 flag 的拦截。
 ```
 
-**设计原则**:git 的 commit/push 是**对外可见且难撤销**的动作,应按第 13 章的规则由人工确认;内部检查点(6.5 的文件快照、grok 的 conv/* 提交)则用于失败后恢复到旧状态,两者要分开。
+**设计原则**:git 的 commit/push 是**对外可见且难撤销**的动作,应按第 13 章的规则由人工确认;内部检查点(6.6 的文件快照、grok 的 conv/* 提交)则用于失败后恢复到旧状态,两者要分开。
 
 ### 根据任务难度和成本选择模型
 
@@ -643,7 +652,7 @@ Chat Completions 的 `finish_reason` 只是判断依据之一,不是所有 API �
 - 独立的 attempt 记录防止**把两次重试拼在一起**
 - 轮次上限(第 4 章)处理**状态循环**
 
-想读产品级实现,可对照 grok 的 `xai-grok-sampler/src/retry.rs`(逐类错误决定处理方式),以及 dsh 让插件依次处理 `agent/request-error` 的实现。
+想读产品级实现,可对照 grok 的重试实现(逐类错误决定处理方式),以及 dsh 让插件依次处理 `agent/request-error` 的实现。
 
 ## 【对比小结】
 

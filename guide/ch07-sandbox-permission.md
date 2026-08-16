@@ -1,3 +1,9 @@
+---
+top: 14
+categories:
+  - 第二部分 · 实现一个 Agent
+---
+
 # 第 13 章 跑得安全：沙箱与权限约束
 
 ::: info 本章要解决的问题
@@ -39,11 +45,9 @@
 
 ### 为什么要先限制自己再 exec?
 
-dsh 的 Landlock 启动器(`native/landlock-run`,一个静态编译的 C 二进制)的做法值得专门讲:它**先给自己上锁**(设置 `no_new_privs` + 安装 Landlock 规则),**然后才 exec 你的命令**。因为规则跨 execve 继承,所以目标进程及其所有后代从**第一个字节**起就被限制——不存在"先启动、再上锁"之间的空窗期。
+正确的上锁顺序是：**先给自己上锁，然后才启动你的命令**。限制规则会跨进程启动继承，所以目标进程及其所有后代从**第一个字节**起就被限制——不存在"先启动、再上锁"之间的空窗期。`sudo` 在 exec 前切换凭据、`sandbox-exec` 在启动目标前应用策略，遵循的都是这个顺序；把流程画成"目标先执行、之后才限制"就错了。
 
-`sudo` 通常在 exec 前切换凭据,`sandbox-exec` 也在启动目标前应用策略;不能把它们画成“目标先执行、之后才限制”。dsh 这层 wrapper 的价值是把 Landlock 安装和目标 `execve` 放在同一个受控进程中,安装失败时不运行目标。
-
-`landlock-run` 自身的启动失败使用退出码 125 并输出以 `landlock-run:` 开头的诊断。但被运行的命令也可能正常返回 125,所以调用方不能只看退出码判断“沙箱没装上”;dsh 的接口约定会同时检查诊断标记。
+配套一条容易漏的工程细节：沙箱自身启动失败时，调用方必须能区分"沙箱没装上"和"命令自己失败了"——只看退出码不够（两者可能撞同一个码），要用专门的诊断标记判断；安装失败时绝不能继续运行目标。
 
 ## 13.3 用户需要看懂哪三档权限?
 
@@ -55,11 +59,9 @@ workspace-write     工作区写意图:允许指定工作区和后端定义的�
 danger-full-access  绕过这一层文件沙箱;不代表系统其他权限自动提升
 ```
 
-- **dsh**:`SandboxMode = 'read-only' | 'workspace-write' | 'danger-full-access'`,原文注释明确"三档只管**文件效果**,网络与进程可见性不在词汇表内"
-- **codex**:`SandboxPolicy::{ReadOnly{network_access}, WorkspaceWrite{writable_roots,...}, DangerFullAccess}`——多了 network_access 旋钮
-- **grok**:profile 枚举更细(`Workspace` / `Devbox` / `ReadOnly` / `Strict` / `Off` / `Custom(name)`);自定义 profile 可通过 `extends` 继承内置基类,但不能无损压成三档
+三家的档位名称和粒度各不相同:有的在三档之外加了**网络开关**旋钮;有的档位更细、还允许继承内置档位做自定义。映射成三类只是为了横向讨论,两点必须记住:**档位词汇只描述文件效果**,网络与进程可见性不在其中;各家默认档位还可能被部署配置覆盖。
 
-三类便于向读者解释“只许看 / 在项目里干活 / 绕过文件限制”,但不能代替具体能力清单。dsh 的 `sandbox-policy` 插件默认 read-only,本书抽查的 base bundle 则显式配置为 workspace-write + ask;部署入口可以覆盖它。Windows ACL 后端只限制写入,不限制读取、网络或进程可见性,并标记为 `partial`。UI 应展示实际生效的后端和限制范围。
+三类便于向读者解释"只许看 / 在项目里干活 / 绕过文件限制",但不能代替具体能力清单。Windows 后端目前只限制写入、不限制读取与网络,属于部分实现——所以界面必须展示**实际生效的后端和限制范围**,而不是一个档位名。
 
 ## 13.4 命令执行前由谁判断能不能跑?
 
@@ -67,40 +69,36 @@ danger-full-access  绕过这一层文件沙箱;不代表系统其他权限自�
 
 ![命令由执行前检查还是操作系统限制](/diagrams/ch07-security-boundary.svg)
 
-### codex 怎样在执行前结合规则与 AST 检查?
+### codex:执行前把命令拆开逐层判断
 
-codex 在命令执行前让命令**依次经过多层判断**(`core/src/exec_policy.rs`):
+codex 在命令执行前让它**依次经过多层判断**:
 
 ```text
-tree-sitter-bash 把命令拆成多段(管道/子 shell 拆开逐段看)
-  → execpolicy 规则引擎(Starlark DSL 写的前缀规则:allow/prompt/forbidden)
+把命令拆成多段(管道/子 shell 拆开逐段看)
+  → 规则引擎(声明式前缀规则:放行 / 需批 / 禁止)
   → 无规则命中 → 安全命令白名单 + 危险命令启发式
   → 结合审批档位,输出:放行 / 需人工批 / 禁止(附原因)
-批准后还能把新前缀"学"回规则文件(amend)
+批准后还能把新前缀"学"回规则库
 ```
 
-配套的 Linux 沙箱是**双层**的:独立 helper 进程先 `no_new_privs`+seccomp 自限,再 exec bwrap(自带 bwrap 二进制并校验摘要,防篡改)做文件系统隔离。macOS 用 Seatbelt,SBPL 策略按权限档动态生成,甚至**保护 `.git/hooks`**——防止 Agent 通过写 git 钩子实现提权持久化(细节见 `sandboxing/src/seatbelt.rs`)。
+配套沙箱同样分层：先用系统调用过滤自限，再做文件系统隔离；macOS 上还**保护 `.git/hooks`**——防止 Agent 通过写 git 钩子实现提权持久化，这是一个容易被忽略的持久化通道。
 
-### grok 为什么让沙箱常开,同时做更多静态检查?
+### grok:启动时上锁,执行前做最多的静态检查
 
-grok 在 Agent 进程启动阶段应用 profile，主要通过 `nono` 使用 Landlock 或 Seatbelt；部分配置还会借助 bwrap 重新启动。已经施加的限制不可逆。
+grok 在 Agent 进程启动阶段就应用沙箱（Landlock 或 Seatbelt，部分配置再叠加 bwrap），已施加的限制不可逆；网络限制则取决于启动路径，不能笼统写成"所有子进程都被断网"。之后在命令执行前做三家中最多的静态检查：用 AST 检查文件写入路径、环境变量泄露、exec 调用，以及内容无法提前知道的 shell（`bash -c "$X"`）。两条铁律：**解析失败就必须人工审批**，绝不自动放行；hooks 目录要真正只读，而不只是配置里写写。
 
-网络限制取决于具体启动路径。特定的本地 terminal 路径会按配置安装 `child_net` 的 seccomp 过滤，不能笼统写成“所有子进程都被断网”。`network_policy.rs` 里的网站 origin 策略明确标注为未来方案，当前没有被 profile 选择或强制执行。
+失败处理也不是统一的"警告后继续"：基础档位不支持时可能记录未应用状态，带必需限制的配置则直接拒绝启动——实现时要区分"已应用 / 未应用 / 出错"三种结果。它还有一个 auto 档：先让 **LLM 分类器**预检，超时、不可用或连续拒绝时转人工。
 
-`hook_write_deny.rs` 还会检查 hooks 目录是否真正只读。失败处理也不是统一的“警告后继续”：不支持的基础 profile 在某些路径会记录未应用状态；带必需 deny 路径、hooks 保护等要求的配置则可能拒绝启动。实现时应根据源码返回的 applied、unapplied 或 error 状态判断。
+### dsh:不分析命令,让操作系统拒绝越界
 
-它的 `evaluate_bash` 是三家中检查最多的:用 tree-sitter-bash AST 检查文件写入路径、环境变量泄露、无法提前知道内容的 shell(`bash -c "$X"`)和 exec;**解析失败就必须人工审批**,不会自动放行;危险命令特判甚至引用了真实漏洞报告(如 `rg --pre` 任意代码执行)。还有个 auto 模式:先让 **LLM 分类器**检查,超时、不可用或连续拒绝时改由人工处理。
-
-### dsh 为什么不分析命令,直接让内核拒绝越界?
-
-dsh 选择另一种做法:**不解析命令,也不使用黑名单**。每次工具调用时 `confine()` 生成受限 argv(Linux 优先 bwrap,没有时尝试 landlock-run;macOS 用 seatbelt;Windows 用 ACL 后端——注意它是**部分实现**:只限制写入,不限制读取、网络与进程可见性)。程序会先实际检查所需后端能否使用,缺失就拒绝执行。是否允许写文件最终由操作系统判断。
+dsh 选择另一种做法:**不解析命令,也不使用黑名单**。每次工具调用时,按平台选择后端在执行边界限制文件访问(Linux 用 bwrap 或 Landlock,macOS 用 Seatbelt,Windows 用 ACL——注意 ACL 后端是**部分实现**:只限写入,不限读取、网络与进程可见性);启动前先实际检查所需后端能否使用,缺失就拒绝执行。是否允许写文件,最终由操作系统判断。
 
 ::: tip 三种做法分别得到什么、付出什么?
 | | codex | grok | dsh |
 |---|---|---|---|
 | 分析时机 | 执行前(规则+AST) | 执行前(AST+环境/exec 检查) | 不分析命令文本 |
 | 强制位置 | 命令分析 + OS 沙箱 | 命令分析 + 启动时 OS 限制 | 每次调用选择 bwrap/Landlock/Seatbelt/Windows ACL |
-| 判断偏差 | 规则和 AST 可能误判;可 amend | 规则覆盖广,仍可能误判或转人工 | 不判断命令意图,但路径策略仍可能拒绝合法操作 |
+| 判断偏差 | 规则和 AST 可能误判;批准后可学回规则库 | 规则覆盖广,仍可能误判或转人工 | 不判断命令意图,但路径策略仍可能拒绝合法操作 |
 | 提前告知用户 | 可根据分析结果说明 | 可根据分析结果说明 | 通常在执行被拒后说明 |
 | 主要代价 | 维护规则、解析器和沙箱 | 维护更多命令规则与 profile | 维护多平台后端;Windows 目前只是部分限制 |
 
@@ -115,17 +113,16 @@ dsh 选择另一种做法:**不解析命令,也不使用黑名单**。每次工�
 
 **codex:独立的扩权工具。** `request_permissions` 让模型请求额外文件系统/网络权限。审批档位为 Never 或该功能未启用时,handler 返回**空的额外权限集合**,不是执行成功;可交互时用户能批准 turn 级或 session 级权限,批准结果再由后续调用使用。
 
-**dsh:在原调用上申请一次更高权限。** 命令在沙箱内被拒时,返回体自动附加两个标记:拒绝原因(`[sandbox: file access denied under read-only mode]`)+ **申请提示**(教模型"同一命令带 `sandbox_permissions`+`justification` 重试一次")。模型照做后:
+**dsh:在原调用上申请一次更高权限。** 命令在沙箱内被拒时,返回体自动附加两个标记:**拒绝原因** + **申请提示**(教模型"同一命令带目标权限和理由重试一次")。重试要过三道校验:
 
 ```text
-validateEscalationArgs: sandbox_permissions 与 justification 必须成对,且目标必须严格变宽
-  (read-only → workspace-write → danger-full-access,单向)
-→ approver.request(...) → Web UI 弹审批 →
-   allowed-once → 仅本次调用生效(下次照旧受限)
-   rejected     → 终局,禁止绕行
+参数成对:目标权限档 + 申请理由,缺一不可
+严格变宽:read-only → workspace-write → danger-full-access,只能单向升
+结果两态:allowed-once → 仅本次调用生效(下次照旧受限)
+          rejected     → 终局,禁止绕行
 ```
 
-严格变宽表保证权限只能**单向**升,`allowed-once` 保证不产生持久污染——一次审批恰好覆盖一次越界,粒度最干净。审批事件(`approval/asked`/`decided`)全部落会话日志,可审计。
+严格变宽保证权限只能**单向**升,单次生效保证不产生持久污染——一次审批恰好覆盖一次越界,粒度最干净。审批的一问一答全部落会话日志,可审计。
 
 ### 高风险操作为什么要先准备,批准后再提交?
 
@@ -156,11 +153,7 @@ requested → decided(allow-once/reject)   正常结束
 
 断线重连后,只有仍未解决、并且服务端仍保存着回答入口的请求才能重放。客户端回答必须带原 request id;同一个回答重复到达时,服务端只能处理一次。
 
-三个实现的恢复能力不同:
-
-- dsh Web 会用同一 `rpcId` 重放尚未回答的审批。
-- grok 断线后不保留审批的回答入口,因此不能承诺恢复原弹窗。
-- codex 使用 `serverRequest/resolved` 撤回已经失效的交互。
+三个实现在这里也分出了差距:有的会用同一请求标识重放尚未回答的审批;有的断线后不保留回答入口,不能承诺恢复原弹窗;有的会主动撤回已失效的交互请求。自建时,这一格的差异要在断线场景里专门测。
 
 第 19 章会把这些状态落到前端的状态更新函数中。
 
@@ -208,11 +201,11 @@ requested → decided(allow-once/reject)   正常结束
 
 | | codex | grok-build | dsh |
 |---|---|---|---|
-| 沙箱粒度 | 每条命令单独套 | 进程启动一次性(不可逆) | 每次调用 confine |
-| 档位 | ReadOnly/WorkspaceWrite/DangerFullAccess(+网络旋钮) | Workspace/Devbox/ReadOnly/Strict/Off/Custom | read-only/workspace-write/danger-full-access |
-| 命令分析 | 规则引擎+tree-sitter 拆段,可 amend 学习 | AST+env/exec 检查,解析失败转人工,可选 LLM 分类器 | 不分析命令文本,由所选平台后端限制 |
-| 升级路径 | request_permissions 工具(turn/session 级) | 无单次提权(换命令重问;拒绝被记忆) | **原地升级重试一次**,allowed-once 仅本次生效 |
-| 防提权细节 | 保护 .git/hooks;自带校验过的 bwrap | hooks 目录写保护 | Landlock 后端先限制再 exec;Windows ACL 仅部分限制 |
+| 沙箱粒度 | 每条命令单独套 | 进程启动一次性(不可逆) | 每次调用选择平台后端 |
+| 档位 | 三档 + 网络旋钮 | 档位更细,支持自定义 | 三档,只管文件效果 |
+| 命令分析 | 规则引擎 + AST 拆段,批准后可学回规则库 | AST 检查最多,解析失败转人工,可选 LLM 分类器 | 不分析命令文本,由所选平台后端限制 |
+| 升级路径 | 独立扩权工具(turn/session 级) | 无单次提权(换命令重问;拒绝被记忆) | **原地升级重试一次**,allowed-once 仅本次生效 |
+| 防提权细节 | 保护 .git/hooks | hooks 目录写保护 | 先限制再 exec;Windows ACL 仅部分限制 |
 
 需要决定的是检查放在哪里。用户态分析(codex/grok)能在执行前说明风险、改善审批体验,但很难覆盖 shell 的所有组合写法;操作系统限制(dsh)不可被命令文本绕过,但只能在执行被拒后说明问题。高风险、强交互产品通常同时使用两层:分析代码决定是否询问用户,操作系统负责阻止越界;受控环境也可以只使用后者,减少实现和维护成本。
 

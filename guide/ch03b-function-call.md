@@ -1,3 +1,9 @@
+---
+top: 6
+categories:
+  - 第二部分 · 实现一个 Agent
+---
+
 # 第 5 章 tool_calls 怎样执行并返回结果
 
 ::: info 本章要解决的问题
@@ -57,7 +63,9 @@
 
 ## 5.2 函数如何被模型看见
 
-模型对某个工具最直接的说明,来自请求里 `tools` 数组的 `name`、`description`、`parameters`;系统提示、项目指令和示例也会影响它怎样选择工具。`parameters` 通常使用 JSON Schema 描述允许的字段、类型和必填项,具体支持的子集由 provider 决定。
+模型对某个工具最直接的说明,来自请求里 `tools` 数组的 `name`、`description`、`parameters`;系统提示、项目指令和示例也会影响它怎样选择工具。
+
+`parameters` 通常使用 JSON Schema 描述允许的字段、类型和必填项,具体支持的子集由 provider 决定。
 
 但是每个工具的完整 schema 都进上下文,几十个工具轻松吃掉几千 token。
 第 8 章会说明 codex 的 `tool_search` 怎样延迟加载工具,改变每次请求的工具清单。
@@ -139,7 +147,9 @@ next_request = messages + tools           # ④ 下一轮请求 = 变长了的�
 
 ### 5.4.1 每个调用都必须与结果正确配对
 
-不同接口的字段名不同:Chat Completions 使用 `tool_call_id`,Anthropic 使用 `tool_use_id`。很多 provider 会校验调用与结果的对应关系,但具体限制、错误状态码和是否由服务端补救并不统一。Agent 应在发请求前自己检查下面三类问题,不要依赖 provider 报错:
+不同接口的字段名不同:Chat Completions 使用 `tool_call_id`,Anthropic 使用 `tool_use_id`。很多 provider 会校验调用与结果的对应关系,但具体限制、错误状态码和是否由服务端补救并不统一。
+
+**Agent 应在发请求前自己检查下面三类问题,不要依赖 provider 报错:**
 
 - **工具调用与结果漏配**:assistant 说了要调 `c1/c2/c3`,却只返回 c1、c3 的结果
 - **工具调用与结果多配**:给同一个 id 回了两条结果

@@ -1,3 +1,9 @@
+---
+top: 15
+categories:
+  - 第二部分 · 实现一个 Agent
+---
+
 # 第 14 章 状态与会话
 
 ::: info 本章要解决的问题
@@ -18,7 +24,7 @@
 | **Goal/任务控制状态** | 目标、验收条件、阶段、预算、阻塞原因、revision | 是:决定“还要不要继续” | 单独加载,重新判断执行授权 |
 | **模型上下文** | system prompt、当前 messages、压缩摘要、工具 schema | 否:是根据记录组装给模型看的输入 | 从日志、Goal 与配置重新组装 |
 | **UI 状态** | 流式文本、工具卡片、审批框、进度、连接状态 | 否:是根据记录计算给人看的当前状态 | snapshot + 事件重放;实时 delta 可丢弃 |
-| **长期记忆** | 用户偏好、项目约定、已验证经验 | 独立知识库 | 按 scope 检索并带来源注入 |
+| **长期记忆** | 用户偏好、项目约定、已验证经验 | 独立知识库 | 按适用范围检索并带来源注入 |
 | **运行统计** | 延迟、token、错误率、一次任务经过模型、工具和重试的调用记录(trace) | 否:只用于观察 | 丢失不应影响正确恢复 |
 
 工作区文件、远端 API、数据库等还构成第七个边界:**外部世界**。会话日志能证明 Agent 发起过一次写操作,却不能仅凭日志断定写操作一定成功或一定失败。
@@ -70,26 +76,26 @@
 
 ### 14.2.2 codex:哪些事件写入 rollout,哪些只发给当前客户端?
 
-codex 恢复会话时以 rollout 为准。`codex-rs/rollout/src/policy.rs` 明确区分两类事件:
+codex 恢复会话时以 rollout 为准——rollout 是 codex 给持久会话日志起的名字。它的 rollout 写入策略明确区分两类事件:
 
 - 模型消息、reasoning、工具调用/结果、compaction、turn 开始/完成/中止、Goal 更新等写入持久日志。
 - 文本 delta、reasoning delta、执行 begin/end、审批交互、连接期错误等大量实时事件是 transient,只服务当前客户端。
 
-恢复时,`rollout_reconstruction.rs` 会处理压缩替换历史、回滚的 turn、turn context 和 world state,而不是简单把 JSONL 每行塞回 `messages`。
+恢复时,codex 的会话重建逻辑会处理压缩替换历史、回滚的 turn 与 turn context,而不是简单把 JSONL 每行塞回 `messages`。
 
-新式 thread store 还维护 SQLite 物化视图,也就是预先算好并保存的查询结果。它出错时可以重建;rollout 才是会话恢复时的唯一可信记录。
+新式 thread store(thread ≈ 会话)还维护 SQLite 物化视图,也就是预先算好并保存的查询结果。它出错时可以重建;rollout 才是会话恢复时的唯一可信记录。
 
-写入也不是“多个进程一起 append 就行”。`thread-store/src/local/writer_lock.rs` 用 OS 文件锁保证一个 thread 同时只有一个写入者,再通过队列依次写入。调用方可以等待缓冲内容真正保存后再继续。
+写入也不是“多个进程一起 append 就行”。这个存储层用 OS 文件锁保证一个 thread 同时只有一个写入者,再通过队列依次写入。调用方可以等待缓冲内容真正保存后再继续。
 
 这种做法可以恢复完整消息,但不保证精确还原崩溃前最后一帧 UI。
 
 ### 14.2.3 grok-build 恢复时为什么读取 `updates.jsonl`?
 
-grok 每个 session 目录里有多种文件:
+崩溃恢复时面对多种文件,必须先确定哪一份可信。grok 每个 session 目录里有多种文件:
 
 ```text
 summary.json            元数据/列表索引
-updates.jsonl           恢复使用的 ACP 更新流
+updates.jsonl           恢复使用的 ACP(Agent Client Protocol,Agent 与客户端的通信协议)更新流
 chat_history.jsonl      发给模型的历史,可从 updates 重建
 plan.json               计划状态
 rewind_points.jsonl     rewind 标记
@@ -97,36 +103,37 @@ signals.json            token/turn 等信号
 compaction_checkpoints/ 压缩检查点
 ```
 
-`xai-sqlite-journal` **不是会话主日志**。它处理的是 SQLite 在本地盘与网络文件系统上的 journal mode 选择,服务索引/缓存等嵌入式数据库。会话恢复应以 `updates.jsonl` 为准。
+`xai-sqlite-journal` **不是会话主日志**,只是替索引/缓存类的 SQLite 选择 journal 模式的组件;会话恢复应以 `updates.jsonl` 为准。
 
 Grok 的 JSONL 层仍有不少容易漏掉的工程件:
 
 - 每个文件用 `.jsonl.lock` 保护文件末尾检查和 append,并在需要时确认内容已经可靠保存。
 - append 前若发现末尾缺换行,先补换行,把损坏限制在一条记录内;读取时跳过 torn/unparseable 行。
 - 普通 append 只 flush;durable append 还会同步文件与父目录;整文件重写采用临时文件 + rename。
-- durable append 把失败分为 `NotCommitted`、`Committed`、`AcknowledgementLost`:只有第一种可直接重试,第三种必须先查 `updates.jsonl` 或外部状态确认是否已提交。
+- durable append 把失败分为三态:`NotCommitted`(没写进,可直接重试)、`Committed`(写进但收不到回执)、`AcknowledgementLost`(结果未知)。第二种数据其实已在盘上,应视为成功并补走后续流程,不要盲目重写;第三种必须先查 `updates.jsonl` 或外部状态确认是否已提交。
 - `chat_history.jsonl` 是可重建缓存,损坏或过期时从 `updates.jsonl` 重建。
 
 这三个错误状态比一个 `throw Error("write failed")` 更有价值:网络断开或进程崩溃时,调用方必须分别处理“没写进去”“写进去了但后处理失败”和“是否写入未知”。
 
 ### 14.2.4 dsh 怎样记录事件并补齐崩溃时未完成的工具调用?
 
-dsh 的 session header 记录 `version/id/createdAt/cwd/parentSession/seedLength/origin/delegationDepth/agentPreset`;事件有连续 `seq`,并把 `turn/start`、原始 `assistant/chunk`、完整 `assistant/message`、`tool/call`、`tool/result`、请求 header/context 等分开记录。
+崩溃后最麻烦的不是丢一段日志,而是悬空的工具调用:日志里能看到 assistant 请求了工具,却不知道它执行到了哪一步——直接截断会丢掉已完成的结果,盲目重试又会重复副作用。dsh 的做法是先把发生的事记录清楚,恢复时再给悬空调用补一个明确结局。
 
-持久层有默认 zstd JSONL 与 SQLite 两个后端:
+dsh 的 session header 记录格式版本 `version`、会话 `id`、fork 依赖的 `parentSession/seedLength` 等字段;事件有连续 `seq`,并把 `turn/start`、原始 `assistant/chunk`、完整 `assistant/message`、`tool/call`、`tool/result`、请求 header/context 等分开记录。
 
-- 当前格式版本是 `0`:项目尚未发布,遇到不兼容版本直接拒绝,不是“永远不需要迁移”。
-- 新事件可声明 `ignorable`;未知且必需的事件必须拒绝,避免虽然解析成功,却恢复出错误状态。
-- 同一 session 的操作串行化;JSONL 初次发布使用同步后的临时文件 + `link`,避免并发创建者互相覆盖。
-- JSONL append 后同步;写入或同步失败会 truncate 回旧长度。SQLite 后端则把批量 append/repair 放进事务。
-- 当前状态缓存只是可丢弃的加速层:落后可以从日志追尾,内容错误则必须丢弃重建。
-
-dsh **不会在崩溃后直接截回最后一个完整 turn**。`core/session/src/repair.ts` 保留文件末尾已经完整写入的事件,再追加确定性的合成事件,补齐悬空工具、step 和 `turn/end(interrupted)`。
-
-它还区分两种悬空工具:
+悬空的调用分两种,处理方式完全不同:
 
 - assistant 提出了调用,但没有 `tool/call`:返回 `TOOL_NOT_STARTED`,仍需要时可重新调度。
 - 已有 `tool/call`,但没有已持久化的 result:返回 `TOOL_OUTCOME_UNKNOWN`,可能已经产生副作用,必须检查外部状态或询问用户,不能盲重试。
+
+持久层有默认 zstd JSONL 与 SQLite 两个后端:
+
+- 新事件可声明 `ignorable`;未知且必需的事件必须拒绝,避免虽然解析成功,却恢复出错误状态。
+- 同一 session 的操作串行化;JSONL 初次发布先写同步后的临时文件再原子落位,避免并发创建者互相覆盖。
+- JSONL append 后同步;写入或同步失败会 truncate 回旧长度。SQLite 后端则把批量 append/repair 放进事务。
+- 当前状态缓存只是可丢弃的加速层:落后可以从日志追尾,内容错误则必须丢弃重建。
+
+dsh **不会在崩溃后直接截回最后一个完整 turn**。它的会话修复模块保留文件末尾已经完整写入的事件,再追加确定性的合成事件,补齐悬空工具、step 和 `turn/end(interrupted)`,让前面两种悬空调用得到确定的结局。
 
 ::: warning “模型可见即可重放”还不够
 “发给模型的内容都写入日志”能重建对话,但不会自动解决多个写入者、格式升级、文件末尾写到一半、外部副作用、UI 读取位置和状态计算规则升级。
@@ -140,9 +147,9 @@ dsh **不会在崩溃后直接截回最后一个完整 turn**。`core/session/sr
 
 `appendFile()` 只保证一次系统调用的意图,不保证多个进程写出的记录不交错。生产实现至少选择一种:
 
-- 一个 session 只允许一个写入任务,其他调用进入队列。
-- OS 文件锁/lock file,跨进程串行 append。
-- 数据库事务 + revision/CAS。CAS(compare-and-swap)指写入前确认版本仍和读取时一致,不一致就拒绝覆盖。
+- 一个 session 只允许一个写入任务,其他调用进入队列;前提是写入都发生在同一进程,不适合多进程场景。
+- OS 文件锁/lock file,跨进程串行 append;还要处理持锁进程崩溃后的锁回收。
+- 数据库事务 + revision/CAS。CAS(compare-and-swap)指写入前确认版本仍和读取时一致,不一致就拒绝覆盖;代价是要引入版本号基础设施。
 
 每条事件带连续 `seq`;读取时发现重复可去重,发现 gap 则停止恢复并请求完整快照,不要猜缺失内容。`seq` 是会话内顺序,全局排序另用 session/turn 标识,不要依赖机器时钟。
 
@@ -226,6 +233,8 @@ Grok 的 ACP replay 给每条可重放更新附 `eventId`,客户端可以带读�
 浏览器也可以使用 `snapshot(lastSeq) + subscribe(afterSeq)`,再用稳定的 item ID 避免重复更新。第 19 章会继续讨论流式 UI 的渲染与重连。
 
 ## 14.5 fork(分叉)到底复制了什么?
+
+什么时候需要 fork?典型场景有两个:想并行验证两种方案,让两条分支各跑一条路互相对照;或者最近几步走错了,想回到几个 turn 之前换条路重试,又不毁掉现有记录。
 
 ```text
 resume:  继续同一个未来(会话 ──────→)

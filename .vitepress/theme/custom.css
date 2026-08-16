@@ -1,0 +1,8 @@
+/* 中文正文的加粗增强。
+   背景:VitePress 默认 strong 仅 font-weight: 600,而中文字体(苹方/微软雅黑等)
+   400 与 600 的视觉差异极小,加粗几乎不可见。改为品牌色 + 700 字重,
+   全书行内强调即刻可辨;行内 code 仍保持"灰底等宽"的语义,两者视觉分工明确。 */
+.vp-doc strong {
+  color: var(--vp-c-brand-1);
+  font-weight: 700;
+}

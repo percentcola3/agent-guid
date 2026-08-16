@@ -1,3 +1,9 @@
+---
+top: 16
+categories:
+  - 第二部分 · 实现一个 Agent
+---
+
 # 第 15 章 记忆：跨会话保存什么
 
 ::: info 本章要解决的问题
@@ -29,7 +35,7 @@
 | `createdAt` / `lastVerifiedAt` / `expiresAt` | 何时产生、上次核验、何时过期 |
 | `revision` | 版本号,UPDATE/DELETE 的 CAS 并发检查依据(见下) |
 
-每条记忆都要回答三件事:**谁说的、适用于哪里、现在还有效吗**。
+每条记忆都要回答三件事:**谁说的、适用于哪里、现在还有效吗**。信任级从高到低排序:用户陈述 > 已验证事实 > 推断;低信任级不能自动覆盖高信任级记忆。
 
 ### 为什么一次成功尝试不能直接写成记忆?
 
@@ -47,7 +53,7 @@
 |------|------------|----------|
 | `ADD` | 当前不存在等价事实,候选满足信任与授权要求 | 创建 revision 1,保留来源 |
 | `UPDATE` | 同一事实已有当前值,但用户纠正、事实变化或 `scope` 改变 | 以 `expectedRevision` 做 CAS,新 revision 指向被替代版本 |
-| `DELETE` | 用户要求忘记、授权撤回、事实失效或 retention 到期 | 写删除事件/tombstone,触发删除传播;不能只从 UI 隐藏 |
+| `DELETE` | 用户要求忘记、授权撤回、事实失效或 retention 到期 | 写删除事件/tombstone(墓碑记录:不抹掉历史,只追加一条“已删除”标记,用于审计和阻止旧事件复活),触发删除传播;不能只从 UI 隐藏 |
 | `NOOP` | 重复候选、低可信冲突、与任务无关,或旧事件试图复活已删除事实 | 不改当前值,但可记录拒绝原因供评估 |
 
 这里要分清两份数据:
@@ -113,17 +119,17 @@
 
 **codex:自动分两阶段处理,并提供可选的手工入口。** 它并非只有 `add_ad_hoc_note`:
 
-1. Phase 1 从符合条件的 root rollout 中筛出适合记忆的内容,并行调用模型抽取 `raw_memory` 与 rollout summary;DB lease(带期限的占用记录)防止并发重复,失败有退避,敏感信息先脱敏。
-2. Phase 2 获取全局锁,从 DB 选取有限的高价值结果,更新 `raw_memories.md` 与 `rollout_summaries/`,再运行无网络、无审批的受限 consolidation agent,维护 `MEMORY.md`、`memory_summary.md` 和 skills。
+1. Phase 1 从符合条件的 root rollout 中筛出适合记忆的内容,并行调用模型抽取原始记忆候选与 rollout 摘要;DB lease(带期限的占用记录)防止并发重复,失败有退避,敏感信息先脱敏。抽取单独成阶段,是因为它便宜、可并行,失败重跑一遍就行。
+2. Phase 2 获取全局锁——整理要改写全局共享的 `MEMORY.md`,同一时刻只能有一个整理者,否则并发整理会互相覆盖。它从 DB 选取有限的高价值结果,更新中间结果文件,再运行 consolidation agent(专门做合并整理的受限子 Agent)维护 `MEMORY.md`、`memory_summary.md` 和 skills。这个 agent 无网络、无审批:整理的输入混着网页等不可信内容,放开这两项,整理过程就可能被注入或越权。
 
-此外,可选工具提供 `add_ad_hoc_note/list/read/search`;手工 note 与自动抽取是两种入口。“手工写入需用户明确要求”只约束手工工具,不表示 codex 不会自动形成记忆。
+此外,可选工具提供 `add_ad_hoc_note` 等手工增补/查阅入口;手工 note 与自动抽取是两种入口。“手工写入需用户明确要求”只约束手工工具,不表示 codex 不会自动形成记忆。
 
 主会话读取的是受控的 memory summary,不能任意改写记忆根目录。
 
 **grok-build:Markdown 保存唯一可信记录,SQLite 只做索引。**该功能目前是 experimental 且默认关闭:
 
 - global/workspace/session 三种 Markdown scope;
-- FTS5 + 可选 vec0 混合检索;
+- SQLite 全文检索加可选的向量索引做混合检索;
 - `/remember` 先展示确认面板,`/forget` 删除,文件可直接编辑;
 - 会话结束可保存不调用 LLM 的最小摘要,`/flush` 生成丰富总结,`/dream` 做带锁的整理;
 - 文件 watcher 在搜索前同步脏索引,索引丢失可以重建。

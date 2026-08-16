@@ -1,3 +1,9 @@
+---
+top: 4
+categories:
+  - 第二部分 · 实现一个 Agent
+---
+
 # 第 3 章 Code Agent 除了 LLM 还需要什么
 
 ::: info 本章要解决的问题
@@ -214,7 +220,13 @@ while True:
 
 ## 3.7 三个参考项目怎样组织这些部分
 
-本书从第 4 章起,会反复对照三个真实项目:codex(OpenAI,Rust,生产级)、grok-build(SpaceXAI,Rust,生产级),以及 **DeepSeek Harness**(DeepSeek 官方,TypeScript,下文简称 dsh)。dsh 功能较完整,但仓库仍标为 developer preview,不承诺兼容性。
+本书从第 4 章起,会反复对照三个真实项目:
+
+- **codex**(OpenAI,Rust,生产级)
+- **grok-build**(SpaceXAI,Rust,生产级)
+- **DeepSeek Harness**(DeepSeek 官方,TypeScript,下文简称 dsh)
+
+dsh 功能较完整,但仓库仍标为 developer preview,不承诺兼容性。
 
 这里先比较它们怎样组织代码和功能,后续每章再看具体实现。下面的模块路径均按本书核对时的代码快照记录。
 

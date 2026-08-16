@@ -1,19 +1,78 @@
 import { defineConfig } from "vitepress";
+import { getThemeConfig } from "@sugarat/theme/node";
 
 // 《Agent 小册》站点配置
+// 主题:@sugarat/theme(基于 VitePress 默认主题的博客主题,文档 https://theme.sugarat.top )
+// 注意:必须用 getThemeConfig + extends 接入,主题导出的 defineConfig 是空壳;
+// 页面数据、pagefind 搜索索引、返回顶部等 vite 插件都在 getThemeConfig 里装配
+const blogTheme = getThemeConfig({
+  // 关闭"推荐文章"侧边栏,保留下方的三部章节目录
+  recommend: false,
+  author: "Agent 小册",
+  article: {
+    readingTime: true,
+  },
+  home: {
+    name: "Agent 小册",
+    motto: "写给前端的 Agent 入门指引",
+    inspiring: [
+      "从 Transformer 原理,到理解并实现 Code Agent",
+      "模型之外的一切工程,都是 Harness",
+    ],
+    pageSize: 10,
+  },
+});
+
 export default defineConfig({
+  extends: blogTheme,
+
+  // 并行会话的文件写入会让 dev server 撞上"一闪而过"的临时文件而崩溃:
+  // ① 会话保存用的 .tmp.*;② Vite 重载配置用的 config.ts.timestamp-*.mjs。
+  // 一并忽略 dist(其他会话跑 docs:build 时写入,只会引起无意义的 reload 风暴)。
+  // 正式文件改名落地后仍会正常触发热载。
+  vite: {
+    server: {
+      watch: {
+        ignored: [
+          "**/.git/**",
+          "**/node_modules/**",
+          "**/.vitepress/dist/**",
+          "**/*.tmp.*",
+          "**/*.timestamp-*.mjs",
+        ],
+      },
+    },
+  },
+
   lang: "zh-CN",
   title: "Agent 小册",
   description: "从 Transformer 原理到理解并实现 Code Agent",
   lastUpdated: true,
   cleanUrls: true,
 
+  // REVIEW.md 是内部审阅文档,README.md 无需成页:都不参与构建
+  srcExclude: ["**/AGENTS.md", "REVIEW.md", "README.md"],
+
   head: [
     ["meta", { name: "theme-color", content: "#3c8cff" }],
   ],
 
+  // SSR 构建默认外置 node_modules 依赖,Node 直接加载主题包内的 .vue 会报错;
+  // 让 Vite 接管主题及其插件依赖的打包
+  vite: {
+    ssr: {
+      noExternal: [/sugarat/, /vitepress-plugin/, /@giscus/, /l2d-widget/],
+    },
+  },
+
   themeConfig: {
     siteTitle: "Agent 小册",
+
+    nav: [
+      { text: "前言", link: "/guide/preface" },
+      { text: "附录", link: "/guide/appendix" },
+      { text: "GitHub", link: "https://github.com/percentcola3/agent-guid" },
+    ],
 
     outline: {
       level: [2, 3],
@@ -27,26 +86,9 @@ export default defineConfig({
 
     lastUpdatedText: "最后更新",
 
-    search: {
-      provider: "local",
-      options: {
-        translations: {
-          button: { buttonText: "搜索", buttonAriaLabel: "搜索" },
-          modal: {
-            displayDetails: "显示详情",
-            resetButtonTitle: "清除",
-            backButtonTitle: "返回",
-            noResultsText: "没有结果",
-            footer: {
-              selectText: "选择",
-              navigateText: "切换",
-              closeText: "关闭",
-            },
-          },
-        },
-      },
-    },
+    // 全文搜索由主题内置的 pagefind 提供,不再使用 VitePress 默认的 minisearch
 
+    // 三部章节目录保留为侧边栏(需配合上面的 blog.recommend: false)
     sidebar: [
       { text: "前言", link: "/guide/preface" },
       {
@@ -120,10 +162,10 @@ export default defineConfig({
         text: "第三部分 · 团队实践与组织适配",
         collapsed: false,
         items: [
-          { text: "第 20 章 基于 Claude Code 的 AI 实践：从 Spec 驱动到 CodeReview 驱动", link: "/guide/ch20-sdd-codereview" },
+          { text: "第 20 章 基于 Claude Code 的 AI 实践", link: "/guide/ch20-sdd-codereview" },
           { text: "第 21 章 基于代码的业务知识图谱：在 RAG 与自检索之间", link: "/guide/ch21-knowledge-graph" },
           { text: "第 22 章 AI 提效的指标是什么", link: "/guide/ch22-metrics" },
-          { text: "第 23 章 AI Friendly 的产物：工作台与 HTML 交付", link: "/guide/ch23-workbench" },
+          { text: "第 23 章 AI Friendly 的产物：Markdown 和 HTML 交付", link: "/guide/ch23-workbench" },
           { text: "第 24 章 AI 在研发流程中的全景图", link: "/guide/ch24-panorama" },
           { text: "第 25 章 组织变化与适配", link: "/guide/ch25-org-adaptation" },
           { text: "附录", link: "/guide/appendix" },

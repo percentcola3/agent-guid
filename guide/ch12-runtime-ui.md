@@ -1,3 +1,9 @@
+---
+top: 20
+categories:
+  - 第二部分 · 实现一个 Agent
+---
+
 # 第 19 章 从 Runtime 到 UI：事件、页面状态、图片文件与恢复
 
 ::: info 本章要解决的问题
@@ -35,7 +41,7 @@ reader.read() → JSON.parse() → setMessage(message + delta)
 1. `ReadableStream` 交付的是**任意字节块**,不是一条 JSON;一个中文字符和一帧 SSE 都可能被从中间切开。
 2. 不同模型服务的字段不同;组件一旦认识 `choices[0].delta`,更换模型就要改 UI。
 3. 重连会让历史事件与实时事件重叠;简单 `append` 会重复文字、工具卡片和审批框。
-4. `delta` 是模型逐步返回的增量片段;最终完整消息可能经过服务端修复、过滤或重组,不能假设“所有片段拼起来”就是最终结果。
+4. `delta` 是模型逐步返回的增量片段;最终完整消息可能经过服务端修复、过滤或重组,不能假设“所有片段拼起来”就是最终结果——例如完成事件可能返回服务端修复后的完整工具参数,或中间网关对输出做过过滤/重组,此时拼出来的内容和最终结果已经不是同一份。
 
 建议分成以下几步:
 
@@ -82,7 +88,7 @@ reader.read() → JSON.parse() → setMessage(message + delta)
 | `approval/requested`、`approval/decided` | 保存 | 用于审计;当前仍待回答的请求还需由服务端单独提供 |
 | `connection/state`、hover、输入中 | 不必保存 | 只影响当前页面,重连后重新建立 |
 
-这里的核心不是“增量片段一律不保存”。dsh 就选择保存原始 `assistant/chunk`,从而能够精确恢复中断时的显示内容,再用紧凑行编码控制体积。真正要决定的是:**哪些信息必须准确保存、哪些可以重新计算,不要碰巧把 WebSocket 收到的所有东西都写进数据库。**
+这里的核心不是“增量片段一律不保存”。dsh 就选择保存原始 `assistant/chunk`,从而能够精确恢复中断时的显示内容,再用紧凑行编码(把连续多个增量事件合并打包成一行存储、读取时再无损还原出每个事件)控制体积。真正要决定的是:**哪些信息必须准确保存、哪些可以重新计算,不要碰巧把 WebSocket 收到的所有东西都写进数据库。**
 
 本书为统一 `AgentEvent` 选择一条状态规则:**同一 `itemId + attemptId` 的 `completed`(完整结果)覆盖 `partial`(未完成片段),不能再拼一次**。
 
@@ -112,8 +118,8 @@ OpenAI-compatible 的 `choices[].delta`、Responses API 的 output item、Anthro
 流中的工具参数经常长这样:
 
 ```text
-第 1 块: {"path":"src/
-第 2 块: index.ts","line":
+第 1 块: {"path":"docs/
+第 2 块: report.md","line":
 第 3 块: 12}
 ```
 
@@ -149,7 +155,7 @@ OpenAI-compatible 的 `choices[].delta`、Responses API 的 output item、Anthro
 
 ### 按对象 ID 分开保存,不要深拷贝整棵会话树
 
-推荐按对象类型分别保存:sessions、turns、items(消息或推理块)、toolCalls、jobs、requests(提问或审批)、uploads、artifacts、computerUse 各使用一张 `Record<id, State>` 表,外加连接状态(`connected / reconnecting + generation`)。
+推荐按对象类型分别保存:sessions、turns、items(消息或推理块)、toolCalls、jobs、requests(提问或审批)、uploads、artifacts、computerUse 各使用一张 `Record<id, State>` 表,外加连接状态(`connected / reconnecting + generation`;generation 是连接代次,每次重连递增,用于识别旧连接的迟到数据)。
 
 记录之间只保存 ID,组件只订阅自己需要的记录。一次终端输出只更新一个 job 的缓冲区,不该重建整个 session 数组。状态更新函数要满足三点:
 
@@ -202,11 +208,11 @@ Agent 与人的交互不能都塞成一条 `message`。下面五类交互有不�
 审批同时有两种记录:
 
 - `approval/requested` / `approval/decided`:可持久化的审计事实;
-- 当前仍可回答的服务端请求:携带 `requestId/rpcId`,并且只接受一次有效响应。
+- 当前仍可回答的服务端请求:携带 `requestId/rpcId`(前者是跨重连稳定的请求标识,后者是这一次 RPC 往返的传输层配对编号),并且只接受一次有效响应。
 
 浏览器重连时只补回“曾经请求过审批”的历史事件还不够,服务端还要重新发布**仍待回答**的请求,并保持同一个 `requestId`。响应至少携带 `sessionId + turnId + toolCallId + requestId + decision`。客户端防双击,服务端按 `requestId` 只接受第一个有效回答;请求已撤回、过期、turn 已取消或工具已完成时,迟到的“允许”必须拒绝。
 
-网络断开本身不是“拒绝”决定:只要 Runtime 仍能证明这个 pending 请求有效,重连后就继续等待同一 `requestId`。但如果进程重启后只剩审计事件,原 responder、待回答表或授权上下文已经丢失,就必须 fail closed,把请求标为 expired/rejected 并重新发起新的审批;不能仅凭一条旧 `approval/requested` 恢复成可点击的“允许”。
+网络断开本身不是“拒绝”决定:只要 Runtime 仍能证明这个 pending 请求有效,重连后就继续等待同一 `requestId`。但如果进程重启后只剩审计事件,原 responder(被指定回答该请求的一方)、待回答表或授权上下文已经丢失,就必须 fail closed,把请求标为 expired/rejected 并重新发起新的审批;不能仅凭一条旧 `approval/requested` 恢复成可点击的“允许”。
 
 ### 通知只告知信息,不代表用户授权
 
@@ -234,7 +240,7 @@ submitted → accepted → queued ─┬→ applied
 commandId + kind + sessionId + targetTurnId/goalRevision + submittedAt + payloadHash
 ```
 
-UI 展示服务端确认的状态,不能“点完按钮就假装成功”。修改要求通常在模型调用结束、工具调用之间或明确支持的中断点进入下一次推理;已经发生的外部副作用不会被改写。目标 turn 已完成时必须标为 `stale`(已过期),不能悄悄把旧补充套到新 turn。
+UI 展示服务端确认的状态,不能“点完按钮就假装成功”。修改要求通常在模型调用结束、工具调用之间或明确支持的中断点进入下一次推理;已经发生的外部副作用不会被改写。目标 turn 已完成时必须标为 `stale`(已过期),不能悄悄把旧补充套到新 turn。排队的代价是指令延迟生效——UI 必须立即给出“已排队/已过期”状态;对明显跑偏的长任务,还应保留显式强中断入口。
 
 取消同样必须有目标。一个全局 `cancel()` 容易遇到时序问题:用户点的是旧 turn 的停止按钮,请求到达时下一 turn 已经开始。
 
@@ -274,13 +280,15 @@ created → running → stopping → killed
 
 ### 上传过程也要记录明确状态
 
+没有明确状态,就无法判断哪些文件可以发给模型、断线后也不知道传到了哪一片:
+
 ```text
 selected → hashing → uploading → scanning → ready → attached → consumed
                   ├→ failed      └→ rejected
                   └→ cancelled
 ```
 
-前端用本地 `uploadId` 跟踪进度,服务端成功后返回 `BlobRef`;只有 `ready` 的引用才能进入发送事件。大文件可分片上传并按 `uploadId + partNumber` 续传,重连后向服务端查询已收分片,不要从 0 猜。草稿删除、上传取消和会话删除还要有垃圾回收策略,否则对象存储会积累无法引用的孤儿。
+前端用本地 `uploadId` 跟踪进度,服务端成功后返回 `BlobRef`;只有 `ready` 的引用才能进入发送事件。大文件可分片上传并按 `uploadId + partNumber` 续传,重连后向服务端查询已收分片,不要从 0 猜。草稿删除、上传取消和会话删除还要有垃圾回收策略,否则对象存储会积累无法引用的孤儿。可行做法:按 `blobId` 反查引用并设置软删除窗口;被去重共享的 Blob 要等引用计数归零才能删。
 
 最低安全线:
 
@@ -332,6 +340,8 @@ observation(frame N)
   → observation(frame N+1)
   → verify(真实页面/服务端状态)
 ```
+
+图中的 `policy/approval` 不是每个动作都会经过:只有动作命中策略规则或需要人工审批时,才在观察和动作之间插入这一环。
 
 “点击了提交”不是完成证据。前端开发任务至少同时检查 DOM/可访问树、console error、网络响应或后端状态;视觉截图补充布局、遮挡和溢出。自动测试自己生成的页面时也要启动真实构建和浏览器,不能只让模型阅读源码后自评“页面没问题”。
 

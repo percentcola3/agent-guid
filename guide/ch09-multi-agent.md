@@ -1,3 +1,9 @@
+---
+top: 17
+categories:
+  - 第二部分 · 实现一个 Agent
+---
+
 # 第 16 章 会协作：子 Agent 与多 Agent
 
 ::: info 本章要解决的问题
@@ -56,7 +62,7 @@
 
 ## 16.3 怎样创建、等待、继续和停止子 Agent?
 
-codex 的 collaboration 工具族(v2)把这些动作做成了模型可调用的工具,可以直接借鉴它的命名:
+多 Agent 运行期只有三类需求——派出去、等回来、必要时打断,其余动作都由这三类衍生。codex 的 collaboration 工具族(v2)把这些动作做成了模型可调用的工具,可以直接借鉴它的命名:
 
 ```text
 spawn_agent    派生:任务书 → 返回 agent id
@@ -68,16 +74,16 @@ interrupt_agent 打断:中断某个 agent 的当前轮
 (close_agent   收尾:关闭 agent 及其后代 —— v1 词汇)
 ```
 
-grok 对应的是 `task` 工具、负责子任务结果处理的 `xai-grok-subagent-resolution`,以及记录 Agent 状态变化的 `xai-agent-lifecycle`。
+grok 对应的则是一个 `task` 工具,外加负责子任务结果处理与 Agent 状态记录的配套机制。
 
-dsh 使用 `subagent` / `subagent_fork` 两个工具,再通过 `tool-subagent-control` 的 `report` / `list_agents` 管理持续运行的子 Agent。
+dsh 使用 `subagent` / `subagent_fork` 两个工具,再通过 control 工具的 `report` / `list_agents` 管理持续运行的子 Agent。
 
 ## 16.4 怎样限制递归并保留父子关系?
 
 多 Agent 会增加三个单 Agent 没有的问题,参考实现分别采取了限制措施:
 
 **① 无限递归**(agent 生成 agent 生成 agent……):
-- codex:`agent-graph-store` **只负责保存和查询** spawn 的父子关系,它的接口和数据表不校验环或深度。深度控制要由 spawn 执行路径完成;**旧版 spawn 有深度检查,当前 V2 实现却明确忽略了配置的最大深度**,因此不能只看到这个配置就认为深度一定受限
+- codex:**只持久化 spawn 的父子关系**,接口和数据表不校验环或深度;深度控制只能在派生子 Agent 的执行路径上完成——spawn 前检查当前层级,超限即拒绝。**旧版 spawn 有深度检查,当前 V2 实现却明确忽略了配置的最大深度**,深度实际只剩任务书自我约束,环路由此成为现实风险,因此不能只看到这个配置就认为深度一定受限
 - dsh:`maxDepth` 默认 **3**,运行时拒绝超深委派;父会话和层级(`delegation_depth`)记在每条会话上
 
 **② 上下文汇入失控**(所有子 agent 的产出都涌回主窗口,隔离白做):
@@ -96,9 +102,9 @@ dsh 的 `subagent_fork` 使用会话 fork:**复制父会话中已经完成的事
 
 ### dsh 怎样把 Codex / Claude Code 当子 Agent 驱动?
 
-dsh 的 subagent 后端不只支持自身。`subagent-codex` / `subagent-claude-code` 两个包已经实现并测试了**把 OpenAI Codex 和 Claude Code 作为子进程驱动**。
+dsh 的 subagent 后端不只支持自身:已有两套后端实现并测试了**把 OpenAI Codex 和 Claude Code 作为子进程驱动**。
 
-它们在 standard/code/cordis preset 中有配置项,但默认不启用。用户需要明确打开,并准备对应的 CLI/SDK 和认证。启用后,主 Agent 可以按任务选择不同引擎,但这不是默认会话一定具备的能力。
+它们在 dsh 的几组预置配置中(见第 17 章)有配置项,但默认不启用。用户需要明确打开,并准备对应的 CLI/SDK 和认证。启用后,主 Agent 可以按任务选择不同引擎,但这不是默认会话一定具备的能力。
 
 ## 16.6 部署前最容易出哪些问题,怎样防止?
 
@@ -115,7 +121,7 @@ dsh 的 subagent 后端不只支持自身。`subagent-codex` / `subagent-claude-
 
 这里把发给子 Agent 的 message 称为“任务说明”。16.6 的许多问题都来自任务说明不清楚。
 
-codex 当前源码同时保留 V2 的基础描述和旧版 V1 的详细委派指引(`core/src/tools/handlers/multi_agents_spec.rs`)。V2 要求子任务具体、有边界,并且能与主任务中的有效工作并行;旧版 V1 还写了更细的授权、任务说明和等待规则。下面会明确区分两版,不要把旧版文字说成当前 V2 的统一行为。
+codex 源码中同时保留 V2 与 V1 两版工具描述。V2 要求子任务具体、有边界,并且能与主任务中的有效工作并行;旧版 V1 还写了更细的授权、任务说明和等待规则。下面会明确区分两版,不要把旧版文字说成当前 V2 的统一行为。
 
 ### ① 是否需要用户明确允许创建子 Agent?
 
@@ -189,7 +195,7 @@ codex 因此把两种行为分开:普通消息先进入待处理队列,接收方
 如果自己实现跨进程或可恢复协作,每条消息至少要说明:
 
 - `messageId`:重试时保持不变,接收端据此去重。
-- `taskId`,以及可选的 `goalId/goalRevision`:明确消息属于哪个任务,并拒绝旧目标留下的迟到指令。
+- `taskId`,以及可选的 `goalId/goalRevision`:明确消息属于哪个任务,并拒绝旧目标留下的迟到指令。goal 是一组相关任务的父目标,goalRevision 随目标改版递增。
 - `from/to` 和消息类型:说明发送方、接收方以及这是任务、状态、结果、控制还是确认消息。
 - 通道内递增的 `seq`:用于排序和发现缺失消息。
 - 可选的 `replyTo`、`deadline` 和 `artifactRefs`:关联前一条消息、限制时效,并让产物只传引用而不传完整内容。
@@ -302,7 +308,9 @@ queued → running → needs_input
 
 给子 Agent 的 message 包含两部分:一份不依赖额外对话也能读懂的任务说明,以及一份返回要求,例如“列出结论、修改路径、验证证据和阻塞项,背景材料写入指定文件”。16.7 的规则应同时写进工具描述。
 
-可以用这个任务验证实现:“分别调查 `src/` 下 HTTP 层和存储层的错误处理方式,对比后给出建议”。模型应创建两个互不干扰的子任务,主上下文只接收两份结论和证据。
+可以用这个任务验证实现:”分别调查仓库里 HTTP 层和存储层的错误处理方式,对比后给出建议”。模型应创建两个互不干扰的子任务,主上下文只接收两份结论和证据。
+
+也要清楚这个版本做不到什么:子任务不能并行、不能中途取消,没有 token 与时间预算控制,子任务也无法向主 Agent 反向通信。无并行与无取消对应 16.8 的等待唤醒与打断,无预算对应 16.9 的预算所有权;返回篇幅没有约束,16.6 的结论过载同样会发生。最小实现只验证了上下文隔离,这些边界要在扩展时逐项补上。
 
 ## 【对比小结】
 

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 240" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+  <rect x="0" y="0" width="700" height="240" fill="#ffffff"/>
+
+  <!-- 锚点范围标注 -->
+  <text x="170" y="34" text-anchor="middle" font-size="12.5" fill="#57606a">锚点(读时签发,编辑时交回校验)</text>
+  <line x1="60" y1="44" x2="280" y2="44" stroke="#57606a" stroke-width="1.2"/>
+  <line x1="60" y1="44" x2="60" y2="52" stroke="#57606a" stroke-width="1.2"/>
+  <line x1="280" y1="44" x2="280" y2="52" stroke="#57606a" stroke-width="1.2"/>
+
+  <!-- 一行读输出的解剖 -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="20">
+    <rect x="60" y="62" width="48" height="44" rx="6" fill="#eaf3ff" stroke="#3c8cff" stroke-width="1.5"/>
+    <text x="84" y="91" text-anchor="middle" fill="#1a4f8f" font-weight="600">22</text>
+
+    <text x="118" y="91" text-anchor="middle" fill="#57606a">:</text>
+
+    <rect x="132" y="62" width="60" height="44" rx="6" fill="#e6f6ec" stroke="#2da44e" stroke-width="1.5"/>
+    <text x="162" y="91" text-anchor="middle" fill="#116329" font-weight="600">abc</text>
+
+    <text x="202" y="91" text-anchor="middle" fill="#57606a">:</text>
+
+    <rect x="216" y="62" width="60" height="44" rx="6" fill="#fff8c5" stroke="#d4a72c" stroke-width="1.5"/>
+    <text x="246" y="91" text-anchor="middle" fill="#7d4e00" font-weight="600">rst</text>
+
+    <text x="292" y="92" text-anchor="middle" fill="#57606a" font-size="22">→</text>
+
+    <rect x="320" y="62" width="340" height="44" rx="6" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
+    <text x="336" y="90" fill="#24292f" font-size="17">console.log("clicked");</text>
+  </g>
+
+  <!-- 引线与标签 -->
+  <g stroke="#afb8c1" stroke-width="1">
+    <line x1="84" y1="106" x2="84" y2="142"/>
+    <line x1="162" y1="106" x2="162" y2="142"/>
+    <line x1="246" y1="106" x2="246" y2="142"/>
+    <line x1="298" y1="106" x2="298" y2="142"/>
+    <line x1="490" y1="106" x2="490" y2="142"/>
+  </g>
+  <g text-anchor="middle">
+    <text x="84" y="162" font-size="13.5" font-weight="600" fill="#24292f">行号</text>
+    <text x="84" y="180" font-size="12" fill="#57606a">文件中的位置</text>
+
+    <text x="162" y="162" font-size="13.5" font-weight="600" fill="#24292f">行摘要</text>
+    <text x="162" y="180" font-size="12" fill="#57606a">本行内容指纹</text>
+
+    <text x="246" y="162" font-size="13.5" font-weight="600" fill="#24292f">块摘要</text>
+    <text x="246" y="180" font-size="12" fill="#57606a">邻近块指纹</text>
+
+    <text x="298" y="160" font-size="12" fill="#8c959f">分隔符</text>
+    <text x="298" y="176" font-size="11.5" fill="#8c959f">不是流程箭头</text>
+
+    <text x="490" y="162" font-size="12.5" fill="#24292f">文件里真实的这一行</text>
+  </g>
+</svg>
