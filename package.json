@@ -9,8 +9,9 @@
   },
   "scripts": {
     "docs:dev": "vitepress dev",
-    "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview"
+    "docs:build": "vitepress build && node scripts/zip_dist.mjs",
+    "docs:preview": "vitepress preview",
+    "docs:zip": "node scripts/zip_dist.mjs"
   },
   "devDependencies": {
     "@sugarat/theme": "^0.5.27",

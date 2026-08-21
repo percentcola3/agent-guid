@@ -6,3 +6,49 @@
   color: var(--vp-c-brand-1);
   font-weight: 700;
 }
+
+/* 移动端兜底:主题已带响应式断点,这里只补它没覆盖、会在窄屏溢出的几处。
+   只在 max-width:768px 生效,不影响桌面端;用 !important 是因为博客主题对同一
+   选择器的优先级较高,兜底规则需稳定压过主题默认值。 */
+@media (max-width: 768px) {
+  /* 正文容器左右留白收窄,避免内容贴边 */
+  .vp-doc {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  /* 代码块与预格式文本:长行横向滚动而非撑破版心 */
+  .vp-doc div[class*="language-"],
+  .vp-doc pre {
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+    border-radius: 0 !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .vp-doc code {
+    word-break: break-word !important;
+  }
+  /* 表格横向滚动(主题已给 table overflow-x:auto,这里确保单元格不强制换行破坏对齐) */
+  .vp-doc table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .vp-doc th,
+  .vp-doc td {
+    white-space: nowrap;
+  }
+  /* 图片:主题把正文图片限到 max-height:300px,窄屏下图表会太小且溢出;
+     放开为按宽度自适应,保证不超出版心 */
+  .VPDoc .content main img,
+  .vp-doc img {
+    max-width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+  /* 自定义块(tip/warning 等)内代码也允许换行,避免横向溢出 */
+  .vp-doc .custom-block pre {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}

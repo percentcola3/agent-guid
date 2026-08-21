@@ -42,6 +42,11 @@ export default defineConfig({
         ],
       },
     },
+    // SSR 构建默认外置 node_modules 依赖,Node 直接加载主题包内的 .vue 会报错;
+    // 让 Vite 接管主题及其插件依赖的打包
+    ssr: {
+      noExternal: [/sugarat/, /vitepress-plugin/, /@giscus/, /l2d-widget/],
+    },
   },
 
   lang: "zh-CN",
@@ -55,15 +60,26 @@ export default defineConfig({
 
   head: [
     ["meta", { name: "theme-color", content: "#3c8cff" }],
+    // 默认浅色主题:VitePress 的 check-dark-mode 脚本会读
+    // localStorage["vitepress-theme-appearance"],未设置时回落到 auto(跟随系统),
+    // 系统深色会把整站变暗。这里在 check-dark-mode 之前(用户 head 先于它入列)注入
+    // 一段脚本:用户从未手动切换过时,把 localStorage 预置为 light,
+    // 于是 check-dark-mode 读到 preference==='light' 而不加 .dark。
+    // 用户手动切深色后 localStorage 变 dark,下次即深色——保留切换、零闪烁、默认浅色。
+    [
+      "script",
+      {},
+      `;(() => {
+        try {
+          const k = 'vitepress-theme-appearance';
+          if (!localStorage.getItem(k)) localStorage.setItem(k, 'light');
+        } catch (e) {}
+      })()`,
+    ],
   ],
 
   // SSR 构建默认外置 node_modules 依赖,Node 直接加载主题包内的 .vue 会报错;
-  // 让 Vite 接管主题及其插件依赖的打包
-  vite: {
-    ssr: {
-      noExternal: [/sugarat/, /vitepress-plugin/, /@giscus/, /l2d-widget/],
-    },
-  },
+  // 让 Vite 接管主题及其插件依赖的打包(已并入上方 vite 块,避免重复键)
 
   themeConfig: {
     siteTitle: "Agent 小册",

@@ -2,13 +2,15 @@
 layout: page
 title: Agent 小册
 hidden: true
+head:
+  - - meta
+    - http-equiv: refresh
+      content: 0;url=/guide/preface
+  - - link
+    - rel: canonical
+      href: /guide/preface
 ---
 
-<script setup>
-import { onMounted } from "vue";
+# 前言
 
-onMounted(() => {
-  // 根路径直接进入正文，不再展示落地页
-  window.location.replace("/guide/preface");
-});
-</script>
+正在跳转到前言，如未自动跳转，请点击 [前言](/guide/preface)。

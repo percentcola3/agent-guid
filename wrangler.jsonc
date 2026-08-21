@@ -3,6 +3,10 @@
   "name": "agent-guid",
   "compatibility_date": "2026-08-01",
   "assets": {
-    "directory": ".vitepress/dist"
+    "directory": ".vitepress/dist",
+    // 根路径直达前言,避免落地页白屏(SSR 首屏直接返回 /guide/preface 的预渲染页)
+    "redirects": [
+      { "from": "/", "to": "/guide/preface", "status": 301 }
+    ]
   }
 }
